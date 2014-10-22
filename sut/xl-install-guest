@@ -1,0 +1,164 @@
+#!/bin/bash
+
+TEMPLATE_NAME="hvm-template"
+CD_BASE_PATH="/images/autoinstall/"
+DISK_LVM_VOLUME="unstable"
+MAC_PROLOGUE="00:16:3E"
+MAC_HOST="0C"
+
+
+
+function select-config()
+{
+    case $1 in
+	w2k3)
+	    echo Using w2k3eesp2 config
+	    INSTALL_CD=w2k3eesp2.iso
+	    VM_NAME="a0"
+	    NUM_VCPUS="1"
+	    MAX_MEM_MB="512"
+	    VDI_SIZE_GB="8"
+	    MAC_VM_TYPE="01"
+	    ;;
+	winxp)
+	    echo Using winxpsp3 config
+	    INSTALL_CD=winxpsp3.iso
+	    VM_NAME="b0"
+	    NUM_VCPUS="1"
+	    MAX_MEM_MB="512"
+	    VDI_SIZE_GB="8"
+	    MAC_VM_TYPE="02"
+	    ;;
+	vista)
+	    echo Using vista config
+	    INSTALL_CD=vistaeesp2.iso
+	    VM_NAME="c0"
+	    NUM_VCPUS="1"
+	    MAX_MEM_MB="512"
+	    VDI_SIZE_GB="8"
+	    MAC_VM_TYPE="03"
+	    ;;
+	w2k8)
+	    echo Using w2k8 config
+	    INSTALL_CD=ws08sp2-x86.iso
+	    VM_NAME="d0"
+	    NUM_VCPUS="1"
+	    MAX_MEM_MB="512"
+	    VDI_SIZE_GB="8"
+	    MAC_VM_TYPE="04"
+	    ;;
+	w2k8-64)
+	    echo Using w2k8 config
+	    INSTALL_CD=ws08sp2-x64.iso
+	    VM_NAME="D0"
+	    NUM_VCPUS="1"
+	    MAX_MEM_MB="512"
+	    VDI_SIZE_GB="8"
+	    MAC_VM_TYPE="14"
+	    ;;
+	win7)
+	    echo Using win7 config
+	    INSTALL_CD=win7-x86.iso
+	    VM_NAME="e0"
+	    NUM_VCPUS="1"
+	    MAX_MEM_MB="512"
+	    VDI_SIZE_GB="8"
+	    MAC_VM_TYPE="05"
+	    ;;
+	*)
+	    echo "Unknown config $1!"
+	    exit 1 
+	    ;;
+    esac
+	    
+}
+
+function die()
+{
+    echo $@
+
+    if [ -n "${config_file}" ] ; then
+	rm -f ${config_file}
+    fi
+
+    if [[ -n "${disk_path}" ]] && [[ -e ${disk_path} ]] ; then
+	echo WARNING: Not cleaning up disk path ${disk_path}.
+    fi
+
+    exit 1
+}
+
+while getopts "c:d:m:v:h" opt ; do
+    case $opt in
+	h)
+	    echo "Usage: $0 [-c config-template] [-m mem_size (MB)] [-v vcpus] [-d disk_size (GB)]"
+	    exit 1
+	    ;;
+	c)
+	    select-config $OPTARG
+	    ;; 
+	m)
+	    MAX_MEM_MB="${OPTARG}"
+	    ;;
+	v)
+	    NUM_VCPUS="${OPTARG}"
+	    ;;
+	d)
+	    VDI_SIZE_GB="${OPTARG}"
+	    ;;
+	*) echo "Invalid option $opt"; exit 1
+	    ;;
+    esac
+done
+
+#SIZE=$((${SIZE_GB} * 1024 * 1024 * 1024))
+
+if [ -e /etc/xensource-inventory ]; then
+  echo Must not run on a XenServer host.
+  exit 1
+fi
+
+# Create a new vm
+echo Creating a new vm, name $VM_NAME
+
+config_file=$VM_NAME
+if [[ -e "${config_file}" ]] ; then
+    echo Config $config_file already exists!
+    exit 1;
+fi
+
+cp $TEMPLATE_NAME $config_file
+
+if [ ! -e "${config_file}" ]; then
+  die VM installation failed.
+fi
+
+# VM name
+echo "name = \"$VM_NAME\"" >> ${config_file}
+echo "memory = \"$MAX_MEM_MB\"" >> ${config_file}
+echo "maxmem = \"$MAX_MEM_MB\"" >> ${config_file}
+echo "vcpus = \"$NUM_VCPUS\"" >> ${config_file}
+
+
+# Add a network
+vm_mac="${MAC_PROLOGUE}:${MAC_HOST}:${MAC_VM_TYPE}:01"
+echo "vif = [ 'bridge=xenbr0, mac=${vm_mac}, model=e1000' ]" >> ${config_file}
+
+# Add a CD
+cd_path=${CD_BASE_PATH}/$INSTALL_CD
+if [ ! -e ${cd_path} ] ; then
+    die "Can't find CD $INSTALL_CD"
+fi
+
+# Make LVM partition
+disk_path=/dev/${DISK_LVM_VOLUME}/${VM_NAME}
+
+if ! lvcreate --name $VM_NAME --size ${VDI_SIZE_GB}G ${DISK_LVM_VOLUME} ; then
+    die lvcreate failed!
+fi
+
+if [ ! -e ${disk_path} ] ; then
+    die lvcreate succeeded, but path not there!
+fi
+
+echo "disk = [ 'phy:${disk_path},hda,w','file:${cd_path},hdc:cdrom,r' ]" >> ${config_file}

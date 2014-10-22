@@ -1,0 +1,19 @@
+#!/bin/bash
+mac=$1
+
+if [[ -e /var/local/arp.log ]] ; then
+    if ! grep -q -i $mac /var/local/arp.log ; then
+	echo -n "Waiting for mac to appear in /var/local/arp.log" 1>&2
+    fi
+    while ! grep -q -i $mac /var/local/arp.log ; do
+	echo -n "." 1>&2
+	sleep 5
+    done
+    # Stupid we have to do this twice, but neither tail
+    # nor awk preserve the failure along the pipe
+    grep -i $mac /var/local/arp.log | tail -1 | awk '{print $2}'
+    exit 0
+fi
+
+echo "No arp.log, running arpwatch" 1>&2
+sut/arpwatch.pl $mac
