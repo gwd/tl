@@ -221,6 +221,15 @@ function vm-vnc()
     $htype-vm-vnc
 }
 
+function vm-console()
+{
+    $arg_parse
+
+    $requireargs htype
+
+    $htype-vm-console
+}
+
 
 function acpi-shutdown()
 {

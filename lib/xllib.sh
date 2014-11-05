@@ -92,6 +92,17 @@ function xl-vm-get-mac()
     eval "return $ret"
 }
 
+function xl-vm-console()
+{
+    $arg_parse
+
+    vm-helper
+
+    xl-vm-wait
+
+    ssh-cmd "xl console ${vm_name}"
+}
+
 function xl-vm-force-shutdown()
 {
     local fn="xe-vm-force-shutdown"
