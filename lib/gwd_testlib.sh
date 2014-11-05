@@ -1215,7 +1215,7 @@ function vm-shutdown-list()
 	done ; 
 
 	for vm in $vm_list ; do 
-	    ${htype}-vm-wait-for-shutdown host=${host} vm=${vm}  $shutdown_extra \
+	    ${htype}-vm-wait-shutdown host=${host} vm=${vm}  $shutdown_extra \
 		|| ! ${force} || ${htype}-vm-force-shutdown host=${host} vm=${vm}
 	done
 	)

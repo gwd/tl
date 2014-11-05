@@ -4,10 +4,10 @@ function xl-vm-start()
 {
     $arg_parse
 
-    $requireargs host vm_name
+    vm-helper
 
     info "Starting vm $vm_name on host ${host}" ; 
-    ${dry_run} || ssh_cmd="xl create ${vm_name}.cfg" ssh-cmd || fail "Starting VM ${vm_name}"
+    ${dry_run} || ssh-cmd "xl create ${vm_name}.cfg" || fail "Starting VM ${vm_name}"
     ${dry_run} || sleep 5 
 }
 
@@ -20,29 +20,31 @@ function xl-vm-shutdown()
 
     $arg_parse
 
-    $requireargs host vm_name
+    vm-helper
 
     info "Shutting down vm $vm_name" ; 
-    ${dry_run} || ssh_cmd="xl shutdown ${vm_name}" ssh-cmd || return 1
-}
-
-function xl-vm-wait-shutdown()
-{
-    $arg_parse
-
-    $requireargs host vm_name
-
-    ${dry_run} || ssh_cmd="while xl list | grep -q \"^${vm_name} \" ; do sleep 1 ; done" ssh-cmd
+    ${dry_run} || ssh-cmd "xl shutdown ${vm_name}" || return 1
 }
 
 # This explicitly "returns" domid
 function xl-vm-wait()
 {
-    while ! domid=$(ssh_cmd="xl domid $vm_name 2>/dev/null" ssh-cmd) ; do
+    while ! domid=$(ssh-cmd "xl domid $vm_name 2>/dev/null") ; do
 	info Waiting for vm $vm_name 
 	sleep 1
     done
 }
+
+function xl-vm-wait-shutdown()
+{
+    local domid
+
+    while domid=$(ssh-cmd "xl domid $vm_name 2>/dev/null") ; do
+	info Waiting for vm $vm_name to shutdown
+	sleep 1
+    done
+}
+
 
 function xl-vm-get-mac()
 {
@@ -62,7 +64,7 @@ function xl-vm-get-mac()
     xl-vm-wait
 
     while true ; do
-	t1=$(ssh-cmd2 "xl network-list $vm_name | grep '^0 '")
+	t1=$(ssh-cmd "xl network-list $vm_name | grep '^0 '")
 	ret=$?
 
 	if [[ "$ret" = "0" ]] ; then
@@ -163,7 +165,7 @@ function xl-vm-get-vnc-port()
 
     vm-wait
     
-    port=$(ssh_cmd="xenstore-read /local/domain/$domid/console/vnc-port" ssh-cmd)
+    port=$(ssh-cmd "xenstore-read /local/domain/$domid/console/vnc-port")
 
     echo $port
     ret_remote_port="$port"
@@ -182,37 +184,6 @@ function xl-vm-vnc()
 }
 
 
-function xl-vm-wait-for-shutdown()
-{
-    local fn="xe-vm-wait-for-boot"
-    # Passable parameters
-    local timeout="${cfg_timeout_shutdown}"
-    local shutdown_interval=1
-    local host
-    local vm
-    # Really local
-    local shutdown_time=0
-
-    $arg_parse
-
-    $requireargs host vm timeout
-
-    ssh_cmd="while ! [[ \$(xl list | grep ${vm} | wc -l) == \"0\" ]] \
-               && [[ \$shutdown_time -lt $timeout ]] ; do
-	     shutdown_time=\$((\$shutdown_time+$shutdown_interval));
-	     sleep $shutdown_interval;
-         done
-         if ! [[ \$shutdown_time -lt $timeout ]] ; then
-	     echo \"ERROR Timed out waiting for ${vm} to shut down\" 
-	     exit 1
-         fi"
-
-    ${dry_run} || ssh-cmd || return 1
-
-    echo "STATUS ${vm} shut down." 
-    return 0
-}
-
 # This is a bit hackish; requires adding the following line to your /etc/rc.local:
 #  touch /tmp/.finished-booting
 # and making sure that /tmp is deleted before ssh starts.
@@ -227,13 +198,10 @@ function xl-host-ready()
 
     $requireargs host
 
-    ssh_cmd="while ! [[ -e /tmp/.finished-booting ]] ; do
-             echo INFO Waiting for boot to complete... ; 
-             sleep 1 ; 
-         done "
-
-    info "Waiting for ${host} to be ready"
-    ${dry_run} || ssh-cmd || return 1
+    while ! ssh-cmd "[[ -e /tmp/.finished-booting ]]" ; do
+	info "Waiting for ${host} to be ready"
+	sleep 1
+    done
 
     status "Host ${host} ready."
     return 0

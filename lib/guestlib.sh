@@ -46,7 +46,7 @@ function vm-wait-ip()
 	fail "Couldn't get mac"
     fi
 
-    ret_vm_ip=$(ssh_cmd="sut/arp-get-ip ${vm_mac}" ssh-cmd)
+    ret_vm_ip=$(ssh-cmd "sut/arp-get-ip ${vm_mac}")
 
     info $vm_name ip $ret_vm_ip
 }
@@ -133,9 +133,11 @@ function vm-wait-shutdown()
 {
     $arg_parse
 
-    $requireargs htype host vm_name
+    vm-helper
 
-    $htype-vm-wait-shutdown host=$host vm_name=$vm_name
+    $requireargs htype
+
+    $htype-vm-wait-shutdown
 }
 
 TESTLIB_HELP+=($'vm-start\t[vm=VMPATH|host=HOST (vm_name=|vm_ip=)] [extra args]')
@@ -150,38 +152,7 @@ function vm-start()
     $htype-vm-start host=$host vm_name=$vm_name "${args[@]}"
 }
 
-# ssh conventions
-#
-# ssh_user: defaults to root
-# ssh_htype: "ubuntu" will do "sudo $cmd" or "sudo bash"
-# ssh_cmd can be set beforehand
-
 function ssh-cmd()
-{
-    local cmd 
-
-    $arg_parse
-
-    # Always override "ssh_cmd" with "cmd" if it exists
-    # NB: at the moment arg_parse discards quotes, so anything
-    #     with a space will get mangled.
-    [[ -n "$cmd" ]] && ssh_cmd="$cmd"
-
-    $requireargs host ssh_cmd
-
-    case "$ssh_htype" in
-	ubuntu)
-	    [[ -z "$ssh_user" ]] && ssh_user="xenuser"
-	    ssh $ssh_user@$host "sudo $ssh_cmd"
-	    ;;
-	*)
-	    [[ -z "$ssh_user" ]] && ssh_user="root"
-	    ssh $ssh_user@$host "$ssh_cmd"
-	    ;;
-    esac
-}
-
-function ssh-cmd2()
 {
     $arg_parse
 
@@ -205,8 +176,7 @@ function ssh-shutdown()
 
     vm-helper-get-ip
 
-    #ssh root@${vm_ip} "shutdown -h now"
-    ssh_cmd="shutdown -h now" ssh-cmd host=${vm_ip}
+    ssh-cmd host=${vm_ip} "shutdown -h now"
 }
 
 function display-tunnel()
@@ -254,12 +224,11 @@ function vm-vnc()
 
 function acpi-shutdown()
 {
-    $arg_parse
+   $arg_parse
 
-    $requireargs host vm_name
+    vm-helper
 
-    #ssh root@${host} "xl trigger ${vm_name} power"
-    ssh_cmd="xl trigger ${vm_name} power" ssh-cmd
+    ssh-cmd "xl trigger ${vm_name} power" 
 }
 
 
