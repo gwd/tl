@@ -42,6 +42,10 @@ function vm-wait-ip()
 	vm_mac=$ret_vm_mac
     fi
 
+    if [[ -z "$vm_mac" ]] ; then
+	fail "Couldn't get mac"
+    fi
+
     ret_vm_ip=$(ssh_cmd="sut/arp-get-ip ${vm_mac}" ssh-cmd)
 
     info $vm_name ip $ret_vm_ip
@@ -88,6 +92,16 @@ function vm-helper()
 	vm-wait-ip host=$host vm_name=$vm_name
 	vm_ip=$ret_vm_ip
     fi
+}
+
+# "Returns" domid
+function vm-wait()
+{
+    $arg_parse
+
+    vm-helper
+
+    $htype-vm-wait
 }
 
 function vm-helper-get-ip()

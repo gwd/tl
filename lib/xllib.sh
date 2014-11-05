@@ -35,6 +35,15 @@ function xl-vm-wait-shutdown()
     ${dry_run} || ssh_cmd="while xl list | grep -q \"^${vm_name} \" ; do sleep 1 ; done" ssh-cmd
 }
 
+# This explicitly "returns" domid
+function xl-vm-wait()
+{
+    while ! domid=$(ssh_cmd="xl domid $vm_name 2>/dev/null" ssh-cmd) ; do
+	info Waiting for vm $vm_name 
+	sleep 1
+    done
+}
+
 function xl-vm-get-mac()
 {
     unset ret_vm_mac;
@@ -44,18 +53,30 @@ function xl-vm-get-mac()
     local vm_name
     local t1
     local t2
+    local retries=2
 
     $arg_parse
 
     $requireargs host vm_name
 
-    t1=$(ssh_cmd="xl network-list $vm_name | grep '^0 '" ssh-cmd)
-    ret=$?
+    xl-vm-wait
 
-    if [[ "$ret" = "1" ]] ; then
-	info No mac for ${vm_name}
-	return 1
-    fi
+    while true ; do
+	t1=$(ssh-cmd2 "xl network-list $vm_name | grep '^0 '")
+	ret=$?
+
+	if [[ "$ret" = "0" ]] ; then
+	    break
+	fi
+
+	if [[ $retries -gt 0 ]] ; then
+	    retries=$(($retries-1))
+	    info No mac for ${vm_name}, retrying...
+	else
+	    info No mac for ${vm_name}, giving up
+	    return 1
+	fi
+    done
 
     #info Testline $vm_mac
     t2=($t1)
@@ -131,7 +152,7 @@ function xl-vm-get-vnc-port()
 {
     unset ret_remote_port
 
-    local fn="xe-vm-get-vnc-port"
+    local fn="xl-vm-get-vnc-port"
 
     local domid
     local port
@@ -139,12 +160,9 @@ function xl-vm-get-vnc-port()
     $arg_parse
 
     vm-helper
-    
-    while ! domid=$(ssh_cmd="xl domid $vm_name 2>/dev/null" ssh-cmd) ; do
-	info Waiting for vm $vm_name 
-	sleep 1
-    done
 
+    vm-wait
+    
     port=$(ssh_cmd="xenstore-read /local/domain/$domid/console/vnc-port" ssh-cmd)
 
     echo $port
