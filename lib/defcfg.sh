@@ -44,5 +44,5 @@ cfg_wait_powerdown="30"    # Slack to wait for a hard powerdown to take effect
 
 # Functionality
 cfg_popup_status=false
-cfg_popup_fail=true
+cfg_popup_fail=false
 
