@@ -100,7 +100,7 @@ function xl-vm-console()
 
     xl-vm-wait
 
-    ssh-cmd "xl console ${vm_name}"
+    ssh-cmd -t "xl console ${vm_name}"
 }
 
 function xl-vm-force-shutdown()
