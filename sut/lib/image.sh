@@ -3,16 +3,22 @@ set -ex
 
 function vhd-create()
 {
+    $arg_parse
+
     vhd-util create -n $image -s $size    
 }
 
 function raw-create()
 {
+    $arg_parse
+
     truncate -s "${size}"M "$image"
 }
 
 function qcow2-create()
 {
+    $arg_parse
+
     qemu-img create -f qcow2 "$image" "${size}"M
 }
 
@@ -71,6 +77,15 @@ EOF
 
 }
 
+function image-attach()
+{
+    $arg_parse
+
+    xl block-attach 0 vdev=$dev,format=$format,target=$image
+    # !!!!
+    usleep 100000
+}
+
 function tbz-to-image()
 {
     $arg_parse
@@ -107,9 +122,7 @@ function tbz-to-image()
     $format-create
 
     # Attach image to dom0
-    xl block-attach 0 vdev=$dev,format=$format,target=$image
-    # !!!!
-    usleep 100000
+    image-attach
 
     # Make partitions
     parted -a optimal /dev/$dev mklabel msdos
