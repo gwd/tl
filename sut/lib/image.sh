@@ -79,9 +79,17 @@ EOF
 
 function image-attach()
 {
+    local spec
+
     $arg_parse
 
-    xl block-attach 0 vdev=$dev,format=$format,target=$image
+    $requireargs dev format image
+
+    spec="vdev=${dev},format=${format},target=${image}"
+
+    [[ -n "$backendtype" ]] && spec="backendtype=${backendtype},${spec}"
+
+    xl block-attach 0 ${spec}
     # !!!!
     usleep 100000
 }
