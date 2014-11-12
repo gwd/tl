@@ -1,6 +1,4 @@
 #!/bin/bash
-set -ex
-
 function vhd-create()
 {
     vhd-util create -n ${image} -s ${size}
@@ -20,13 +18,26 @@ function image-create()
 {
     $arg_parse
 
+    [[ -z "${overwrite}" ]] && overwrite=false
+
     $requireargs format image size
+
+    if [[ -e $image ]] ; then
+	if "${overwrite}" ; then
+	    info "${image} exists; overwriting"
+	    rm -f ${image}
+	else
+	    fail "${image} exists.  Use overwrite=true to overwrite"
+	fi
+    fi
 
     ${format}-create
 }
 
 function tb-c6-post()
 {
+    set -ex
+
     # For now, disable selinux.  Alternate would be "fixfiles relabel"
     sed -i --follow-symlinks "s/SELINUX=enforcing/SELINUX=permissive/;" $mount/etc/selinux/config
     chroot $mount fixfiles -f relabel
@@ -77,7 +88,7 @@ DEVICE=eth0
  ONBOOT=yes
  BOOTPROTO=dhcp
 EOF
-
+    set +ex
 }
 
 function image-attach()
@@ -99,14 +110,16 @@ function image-attach()
 
 function tbz-to-image()
 {
+    set -ex 
+
     $arg_parse
 
-    ${wdir:=/tmp}
-    ${odir:=/images}
-    ${basename:=c6}
-    ${format:=vhd}
-    ${size:=2048}
-    ${dev:=xvda}
+    : ${wdir:="/tmp"}
+    : ${odir:="/images"}
+    : ${basename:="c6"}
+    : ${format:="vhd"}
+    : ${size:="2048"}
+    : ${dev:="xvda"}
 
     if [[ -e /dev/${dev} ]] ; then
 	echo /dev/${dev} exists!
@@ -129,8 +142,7 @@ function tbz-to-image()
     devp="${dev}1"
 
     # Create empty image
-    rm -f $image
-    image-create
+    image-create overwrite=true
 
     # Attach image to dom0
     image-attach
@@ -174,4 +186,5 @@ EOF
     xl block-detach 0 $dev
     ls -l $image
 
+    set +ex
 }
