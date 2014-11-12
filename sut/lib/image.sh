@@ -3,23 +3,26 @@ set -ex
 
 function vhd-create()
 {
-    $arg_parse
-
-    vhd-util create -n $image -s $size    
+    vhd-util create -n ${image} -s ${size}
 }
 
 function raw-create()
 {
-    $arg_parse
-
-    truncate -s "${size}"M "$image"
+    truncate -s "${size}"M "${image}"
 }
 
 function qcow2-create()
 {
+    qemu-img create -f qcow2 "${image}" "${size}"M
+}
+
+function image-create()
+{
     $arg_parse
 
-    qemu-img create -f qcow2 "$image" "${size}"M
+    $requireargs format image size
+
+    ${format}-create
 }
 
 function tb-c6-post()
@@ -127,7 +130,7 @@ function tbz-to-image()
 
     # Create empty image
     rm -f $image
-    $format-create
+    image-create
 
     # Attach image to dom0
     image-attach
