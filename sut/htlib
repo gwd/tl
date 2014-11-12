@@ -1,22 +1,15 @@
 #!/bin/bash
 
+# To use this library, include the following line:
 [[ -z "$TESTLIB_PATH" ]] && TESTLIB_PATH="/root/sut/lib"
 
-echo path $TESTLIB_PATH
-
-CTLIB_RUN_CMD=false
-
-[[ -n "$TESTLIB" ]] || CTLIB_RUN_CMD=true
-
-TESTLIB=1
-
+# Then as many as the sub-libraries as you need
 . ${TESTLIB_PATH}/core.sh
 . ${TESTLIB_PATH}/image.sh
 
-
+# Include your defaults
 [[ -e "~/.testconfig" ]] && . ~/.testconfig
 
-# Only run main if this is not being included as a library
-if $CTLIB_RUN_CMD ; then
-    main "$@"
-fi
+# And do your own thing rather than running commands
+# I suggest defining a "main" function of your own and running it like this.
+cmdline "$@"

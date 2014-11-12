@@ -175,7 +175,7 @@ function help()
     done
 }
 
-function main()
+function cmdline()
 {
     local cmd;
 
