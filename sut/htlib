@@ -6,6 +6,7 @@
 # Then as many as the sub-libraries as you need
 . ${TESTLIB_PATH}/core.sh
 . ${TESTLIB_PATH}/image.sh
+. ${TESTLIB_PATH}/tblib.sh
 
 # Include your defaults
 [[ -e "~/.testconfig" ]] && . ~/.testconfig

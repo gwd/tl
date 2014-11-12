@@ -34,118 +34,50 @@ function image-create()
     ${format}-create
 }
 
-function tb-c6-post()
+function image-get-blockspec()
 {
-    set -ex
+    local _s
 
-    # For now, disable selinux.  Alternate would be "fixfiles relabel"
-    sed -i --follow-symlinks "s/SELINUX=enforcing/SELINUX=permissive/;" $mount/etc/selinux/config
-    chroot $mount fixfiles -f relabel
+    $arg_parse
 
-    # Replace <UUID> with uuid in /etc/fstab, /etc/grub.conf
-    uuid=$(blkid /dev/$devp | perl -ne '/UUID="([a-f0-9-]*)"/; print $1;')
+    $requireargs dev format image var
 
-    [[ -n "$uuid" ]] 
+    _s="vdev=${dev},format=${format},target=${image}"
 
-    sed -i --follow-symlinks "s/<UUID>/$uuid/;" $mount/etc/fstab
-    sed -i --follow-symlinks "s/<UUID>/$uuid/;" $mount/boot/grub/grub.conf
+    [[ -n "$backendtype" ]] && _s="backendtype=${backendtype},${_s}"
 
-    # We expect this to fail, but it will copy the needed files for the next step
-    set +e
-    chroot $mount grub-install /dev/xvda
-    set -e
-
-    chroot $mount /sbin/grub --batch <<EOF
-device (hd0) /dev/xvda
-root (hd0,0)
-setup (hd0)
-quit
-EOF
-    ls -l $image
-
-
-    # Run grubby
-    vmlinuz=$(ls $mount/boot/vmlinuz-* | tail -1 | sed "s|$mount||;")
-    initramfs=$(ls $mount/boot/initramfs-* | tail -1 | sed "s|$mount||;")
-
-    echo vmlinuz $vmlinuz
-    echo initramfs $initramfs
-
-    chroot $mount grubby --bad-image-okay --add-kernel=$vmlinuz --initrd=$initramfs --title="CentOS" --make-default --copy-default
-
-    cat $mount/boot/grub/grub.conf
-    ls -l $image
-
-    # Set up networking
-    cat >$mount/etc/sysconfig/network <<EOF
-NETWORKING=yes
-HOSTNAME=centos.localdomain
-EOF
-
-    cat >$mount/etc/sysconfig/network-scripts/ifcfg-eth0 <<EOF
-DEVICE=eth0
- TYPE=Ethernet
- ONBOOT=yes
- BOOTPROTO=dhcp
-EOF
-    set +ex
+    eval "$var=\"$_s\""
 }
 
 function image-attach()
 {
-    local spec
+    local blockspec
 
     $arg_parse
 
-    $requireargs dev format image
+    image-get-blockspec var=blockspec
 
-    spec="vdev=${dev},format=${format},target=${image}"
-
-    [[ -n "$backendtype" ]] && spec="backendtype=${backendtype},${spec}"
-
-    xl block-attach 0 ${spec}
+    xl block-attach 0 ${blockspec}
     # !!!!
     usleep 100000
 }
 
-function tbz-to-image()
+function image-detach()
 {
-    set -ex 
-
     $arg_parse
 
-    : ${wdir:="/tmp"}
-    : ${odir:="/images"}
-    : ${basename:="c6"}
-    : ${format:="vhd"}
-    : ${size:="2048"}
-    : ${dev:="xvda"}
+    $requireargs dev
 
-    if [[ -e /dev/${dev} ]] ; then
-	echo /dev/${dev} exists!
-	exit 1
-    fi
+    xl block-detach 0 $dev
+}
 
-    mount=$wdir/centos-chroot
-    tarball=$odir/c6.tar.gz
+function image-partition()
+{
+    $arg_parse
 
-    case $format in
-	vhd|raw|qcow2)
-	    image=$odir/$basename-NN.$format
-	    ;;
-	*)
-	    echo Unknown imagetype $imagetype!
-	    exit 1
-	    ;;
-    esac
+    $requireargs dev
 
-    devp="${dev}1"
-
-    # Create empty image
-    image-create overwrite=true
-
-    # Attach image to dom0
-    image-attach
+    local devp="${dev}1"
 
     # Make partitions
     parted -a optimal /dev/$dev mklabel msdos
@@ -154,37 +86,4 @@ function tbz-to-image()
 
     # Make filesystem
     mkfs.ext4 /dev/$devp
-
-    # Mount filesystem
-    #  - procfs, sysfs, mount, /dev/xvd*
-    rm -rf $mount
-    mkdir -p $mount
-    mount /dev/$devp $mount
-
-    ls -l $image
-
-    # Untar filesystem
-    tar xzp -f $tarball -C $mount
-    ls -l $image
-
-    # Make suitable for chroot
-    cp -a /dev/xvda* $mount/dev/
-
-    cat > $mount/etc/mtab <<EOF
-/dev/xvda1 / ext4 rw 0 0
-EOF
-
-    tb-c6-post
-
-    # Copy ssh keys
-    mkdir -p $mount/root/.ssh
-    cp /root/.ssh/authorized_keys $mount/root/.ssh/authorized_keys
-
-    # Clean up
-    umount $mount
-
-    xl block-detach 0 $dev
-    ls -l $image
-
-    set +ex
 }
