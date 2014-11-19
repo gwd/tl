@@ -1,4 +1,5 @@
 #!/bin/bash
+#set -x
 
 # Include your defaults
 if [[ -e "./testconfig" ]] ; then

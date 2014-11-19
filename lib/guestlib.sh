@@ -46,51 +46,75 @@ function vm-wait-ip()
 	fail "Couldn't get mac"
     fi
 
+    # host inherited
     ret_vm_ip=$(ssh-cmd "sut/arp-get-ip ${vm_mac}")
 
     info $vm_name ip $ret_vm_ip
 }
 
-# 
-# vm_ip: Er, do we actually want this anymore?
-# host, vm_name: 
-# vm: walk down "stack" and return
 function vm-helper()
 {
+    fail "Function no longer in use!"
+}
+
+function vm-helper-get-ip()
+{
+    vm-helper ip
+}
+
+# Make it easy to unify commands for nested virtualization, and for hosts
+# 
+# tgt=a[:b[:c...]]
+#
+# - tgt_name = addr of last entry
+# - if more than one entry exists, host_addr = addr of second-to-last entry
+# - if 'addr' is passed, tgt_addr will be an ssh-able hostname for the last entry.
+
+function tgt-helper()
+{
+    if [[ -n "$tgt_name" ]] ; then 
+	return
+    fi
+
     local fn
+    local stack
 
     fn="$1"
 
-    [[ -n "$vm_name" && -n "$host" ]] || [[ -n "$vm" ]] || [[ -n "$vm_ip" ]] \
-	|| fail "Need either vm_ip, vm_name and host, or vm"
+    
+    $requireargs tgt
 
-    if [[ -n "$vm_ip" ]] ; then
-	return;
-    fi
+    unset host_addr
+    unset tgt_addr
 
-    local guest
-    local stack
+    parse-separator-array ":" stack $tgt
 
-    if [[ -z "$host" ]] ; then
-	parse-separator-array ":" stack $vm
+    tgt_name="${stack[0]}"
+    pop stack
 
-	host="${stack[0]}"
-	vm_name="${stack[1]}"
-	pop stack
-    fi
-
-    while [[ -n "${stack[1]}" ]] ; do
-	info Looking up host $host vm_name $vm_name
-	vm-wait-ip host=$host vm_name=$vm_name
-	host=$ret_vm_ip
-	vm_name="${stack[1]}"
+    while [[ -n "${stack[0]}" ]] ; do
+	# Transtate tgt_name into an addr and put it in host_addr.
+	# If we're at the top level, addr is just tgt_name.
+	# If we're below that, look up the tgt_addr on the host.
+	if [[ -z "${host_addr}" ]] ; then
+	    host_addr="${tgt_name}"
+	else
+	    info Looking up host ${host_addr} vm_name ${tgt_name}
+	    vm-wait-ip host=${host_addr} vm_name=${tgt_name}
+	    host_addr=$ret_vm_ip
+	fi
+	tgt_name=${stack[0]}
 	pop stack
     done
 
-    if [[ "$fn" == "ip" ]] ; then
-	info Looking up host $host vm_name $vm_name
-	vm-wait-ip host=$host vm_name=$vm_name
-	vm_ip=$ret_vm_ip
+    if [[ "$fn" == "addr" ]] ; then
+	if [[ -z "${host_addr}" ]] ; then
+	    tgt_addr="${tgt_name}"
+	else
+	    info Looking up host ${host_addr} vm_name ${tgt_name}
+	    vm-wait-ip host=${host_addr} vm_name=${tgt_name}
+	    tgt_addr=$ret_vm_ip
+	fi
     fi
 }
 
@@ -99,41 +123,26 @@ function vm-wait()
 {
     $arg_parse
 
-    vm-helper
+    tgt-helper
 
     $htype-vm-wait
 }
 
-function vm-helper-get-ip()
-{
-    vm-helper ip
-}
-
 TESTLIB_HELP+=($'vm-ip\t\t[vm=VMPATH|host=HOST (vm_name=|vm_ip=)]')
-function vm-ip()
+function tgt-addr()
 {
     $arg_parse
 
-    vm-helper ip
+    tgt-helper addr
 
-    echo $vm_ip
-}
-
-function vm-helper-get-ip-OLD()
-{
-    [[ -n "$vm_name" ]] || [[ -n "$vm_ip" ]] || fail "Need either vm_name or vm_ip"
-
-    if [[ -z "$vm_ip" ]] ; then
-	vm-wait-ip host=$host vm_name=$vm_name
-	vm_ip=$ret_vm_ip
-    fi
+    echo ${tgt_addr}
 }
 
 function vm-wait-shutdown()
 {
     $arg_parse
 
-    vm-helper
+    tgt-helper
 
     $requireargs htype
 
@@ -147,14 +156,34 @@ function vm-start()
 
     $requireargs htype
 
-    vm-helper
+    tgt-helper
 
-    $htype-vm-start host=$host vm_name=$vm_name "${args[@]}"
+    $htype-vm-start host=$host_addr vm_name=$tgt_name "${args[@]}"
 }
 
+# *** WARNING ***
+# This function at the moment BEHAVES DIFFERENTLY than tgt-ssh.
+# 
+# It does not accept a tgt.  But it will accept the following in order:
+# - host
+# - tgt_addr
+# - host_addr
+#
+# So you can always specify host=[blah]
+#
+# But you can also run "tgt-helper" (without "addr") to have it run host_addr,
+# or run "tgt-helper addr" to have it run tgt_addr.
 function ssh-cmd()
 {
     $arg_parse
+
+    if [[ -z "${host}" ]] ; then
+	if [[ -n "${tgt_addr}" ]] ; then
+	    host="${tgt_addr}"
+	elif [[ -n "${host_addr}" ]] ; then
+	    host="${host_addr}"
+	fi
+    fi
 
     $requireargs host
 
@@ -174,9 +203,9 @@ function ssh-shutdown()
 {
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
 
-    ssh-cmd host=${vm_ip} "shutdown -h now"
+    ssh-cmd "shutdown -h now"
 }
 
 function display-tunnel()
@@ -233,11 +262,11 @@ function vm-console()
 
 function acpi-shutdown()
 {
-   $arg_parse
+    $arg_parse
 
-    vm-helper
-
-    ssh-cmd "xl trigger ${vm_name} power" 
+    tgt-helper
+    
+    ssh-cmd "xl trigger ${tgt_name} power" 
 }
 
 
@@ -245,27 +274,32 @@ function ssh-ready()
 {
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
 
     info "Attempting ssh connect to vm ${vm_ip} timeout ${s_timeout}"
-    if ! wait-for-port host=${vm_ip} timeout=${cfg_timeout_ssh} interval=1 port=22 ; then
+    if ! wait-for-port host=${tgt_addr} timeout=${cfg_timeout_ssh} interval=1 port=22 ; then
 	error "Waiting for SSH to appear"
 	return 1;
     fi
 }
 
-TESTLIB_HELP+=($'vm-ssh\t\t[vm=VMPATH|host=HOST (vm_name=|vm_ip=)] [ssh commands]')
-
 function vm-ssh()
 {
-    # NB ssh_htype should be used by vm-helper-get-ip, ssh_vtype for the guest
+    fail "Function no longer in use!"
+}
+
+TESTLIB_HELP+=($'vm-ssh\t\t[vm=VMPATH|host=HOST (vm_name=|vm_ip=)] [ssh commands]')
+
+function tgt-ssh()
+{
+    # NB ssh_htype should be used by tgt-helper, ssh_vtype for the guest
 
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
 
-    info "Attempting ssh connect to vm ${vm_ip} type ${ssh_htype} timeout ${s_timeout}"
-    if ! wait-for-port host=${vm_ip} timeout=${cfg_timeout_ssh} interval=1 port=22 ; then
+    info "Attempting ssh connect to target ${tgt_addr} type ${ssh_htype} timeout ${cfg_timeout_ssh}"
+    if ! wait-for-port host=${tgt_addr} timeout=${cfg_timeout_ssh} interval=1 port=22 ; then
 	error "Waiting for SSH to appear"
 	return 1;
     fi
@@ -274,28 +308,13 @@ function vm-ssh()
     case "$ssh_vtype" in
 	ubuntu)
 	    [[ -z "$ssh_user" ]] && ssh_user="xenuser"
-	    ssh -t $ssh_user@$vm_ip "sudo bash"
+	    ssh -t $ssh_user@${tgt_addr} "sudo bash"
 	    ;;
 	*)
 	    [[ -n "$ssh_user" ]] || ssh_user="root"
-	    ssh $ssh_user@$vm_ip "${args[@]}"
+	    ssh $ssh_user@${tgt_addr} "${args[@]}"
 	    ;;
     esac
-}
-
-function ssh-vm-ubuntu()
-{
-    $arg_parse
-
-    vm-helper-get-ip
-
-    info "Attempting ssh connect to vm ${vm_ip} timeout ${s_timeout}"
-    if ! wait-for-port host=${vm_ip} timeout=${cfg_timeout_ssh} interval=1 port=22 ; then
-	error "Waiting for SSH to appear"
-	return 1;
-    fi
-
-    ssh -t xenuser@${vm_ip} "sudo bash"
 }
 
 function vm-shutdown()

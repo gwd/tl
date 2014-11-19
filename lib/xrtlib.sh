@@ -1,36 +1,17 @@
-function quote-array()
-{
-    local _array
-    local _v
-    _v=$1
-
-    while eval "[[ -n \"$_v\" ]]" ; do
-	echo hi;
-    done
-}
-
 function xrt-daemon()
 {
-    #args=($@)
-
-    #quote-array args
-
     echo "$TESTLIB_PATH/../viadaemon.py $@"
-    $TESTLIB_PATH/../viadaemon.py $@
+    $TESTLIB_PATH/../viadaemon.py "$@"
 }
 
 function xrt-daemon2()
 {
-    #args=($@)
-
-    #quote-array args
-
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
 
-    info $TESTLIB_PATH/../viadaemon.py $vm_ip "${args[@]}"
-    $TESTLIB_PATH/../viadaemon.py $vm_ip "$args"
+    info $TESTLIB_PATH/../viadaemon.py $tgt_addr "${args[@]}"
+    $TESTLIB_PATH/../viadaemon.py $tgt_addr "${args[@]}"
 }
 
 function xrt-daemon-wait()
@@ -43,11 +24,10 @@ function xrt-daemon-wait()
 
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
 
-    info Calling wait-for-port host=${vm_ip} port=${cfg_xrt_daemon_port} 
-
-    wait-for-port host=${vm_ip} port=${cfg_xrt_daemon_port} 
+    info Calling wait-for-port host=${tgt_addr} port=${cfg_xrt_daemon_port} 
+    wait-for-port host=${tgt_addr} port=${cfg_xrt_daemon_port} 
 }
 
 function xrt-ready()
@@ -59,9 +39,9 @@ function xrt-shutdown()
 {
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
 
-    xrt-daemon -S $vm_ip
+    xrt-daemon -S $tgt_addr
 }
 
 function xrt-reboot()
@@ -70,9 +50,9 @@ function xrt-reboot()
 
     $arg_parse
 
-    $requireargs vm_ip
+    tgt-helper addr
 
-    xrt-daemon -S $vm_ip
+    xrt-daemon -S $tgt_addr
 }
 
 function xrt-copy-file()
@@ -90,7 +70,7 @@ function xrt-copy-file()
 
     $requireargs filename remote_path www_base url_base
 
-    vm-helper-get-ip
+    tgt-helper addr
 
     if [[ -n "$remote_filename" ]] ; then
 	remote_path=${remote_path}${remote_filename}
@@ -102,7 +82,7 @@ function xrt-copy-file()
     echo cp $local_path/$filename $www_base/$filename
     cp $local_path/$filename $www_base/$filename || return 1
     
-    echo xrt-daemon -u ${url_base}/$filename -F "$remote_path" ${vm_ip}
-    xrt-daemon -u ${url_base}/$filename -F "$remote_path" ${vm_ip} || fail "Copying tools"
+    echo xrt-daemon -u ${url_base}/$filename -F "$remote_path" ${tgt_addr}
+    xrt-daemon -u ${url_base}/$filename -F "$remote_path" ${tgt_addr} || fail "Copying tools"
 
 }

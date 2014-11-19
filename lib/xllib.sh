@@ -4,10 +4,10 @@ function xl-vm-start()
 {
     $arg_parse
 
-    vm-helper
+    tgt-helper
 
-    info "Starting vm $vm_name on host ${host}" ; 
-    ${dry_run} || ssh-cmd "xl create ${vm_name}.cfg" || fail "Starting VM ${vm_name}"
+    info "Starting vm ${tgt_name} on host ${host_addr}" ; 
+    ${dry_run} || ssh-cmd "xl create ${tgt_name}.cfg" || fail "Starting VM ${tgt_name}"
     ${dry_run} || sleep 5 
 }
 
@@ -20,17 +20,17 @@ function xl-vm-shutdown()
 
     $arg_parse
 
-    vm-helper
+    tgt-helper
 
-    info "Shutting down vm $vm_name" ; 
-    ${dry_run} || ssh-cmd "xl shutdown ${vm_name}" || return 1
+    info "Shutting down vm ${tgt_name}" ; 
+    ${dry_run} || ssh-cmd "xl shutdown ${tgt_name}" || return 1
 }
 
 # This explicitly "returns" domid
 function xl-vm-wait()
 {
-    while ! domid=$(ssh-cmd "xl domid $vm_name 2>/dev/null") ; do
-	info Waiting for vm $vm_name 
+    while ! domid=$(ssh-cmd "xl domid $tgt_name 2>/dev/null") ; do
+	info Waiting for vm $tgt_name 
 	sleep 1
     done
 }
@@ -96,11 +96,11 @@ function xl-vm-console()
 {
     $arg_parse
 
-    vm-helper
+    tgt-helper
 
     xl-vm-wait
 
-    ssh-cmd -t "xl console ${vm_name}"
+    ssh-cmd -t "xl console ${tgt_name}"
 }
 
 function xl-vm-force-shutdown()
@@ -172,7 +172,7 @@ function xl-vm-get-vnc-port()
 
     $arg_parse
 
-    vm-helper
+    tgt-helper
 
     vm-wait
     

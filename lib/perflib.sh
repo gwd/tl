@@ -7,16 +7,9 @@ function workload-xen-build()
 
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
     
-    # [[ -n "$vm_name" ]] || [[ -n "$vm_ip" ]] || fail "Need either vm_name or vm_ip"
-
-    # if [[ -z "$vm_ip" ]] ; then
-    # 	vm-wait-ip host=$host vm_name=$vm_name
-    # 	vm_ip=$ret_vm_ip
-    # fi
-
-    ssh root@${vm_ip} "cd xenbuild/xen.git ; make -C xen clean ; make XEN_TARGET_ARCH=x86_64 -j${j} xen"
+    ssh-cmd "cd xenbuild/xen.git ; make -C xen clean ; make XEN_TARGET_ARCH=x86_64 -j${j} xen"
 }
 
 function workload-xen-build-chroot()
@@ -27,9 +20,9 @@ function workload-xen-build-chroot()
 
     $arg_parse
 
-    $requireargs host
+    tgt-helper addr
 
-    ssh root@${host} "chroot /mnt/h0 bash -c \"cd /root/xenbuild/xen.git ; make -C xen clean ; make XEN_TARGET_ARCH=x86_64 -j${j} xen\""
+    ssh-cmd "chroot /mnt/h0 bash -c \"cd /root/xenbuild/xen.git ; make -C xen clean ; make XEN_TARGET_ARCH=x86_64 -j${j} xen\""
 }
 
 
@@ -52,19 +45,16 @@ function workload-ddk-build-install()
 
     $arg_parse
 
-    $requireargs host
-
-
-    vm-helper-get-ip
+    tgt-helper addr
 
     info Inserting ddk CD
-    ssh root@${host} "xl cd-insert ${vm_name} hdc /images/autoinstall/w2k3eesp1_ddk.iso" \
+    ssh-cmd host=${host_addr} "xl cd-insert ${tgt_name} hdc /images/autoinstall/w2k3eesp1_ddk.iso" \
 	|| fail "inserting CD"
     info Sleep 5
     sleep 5  
     info Running ddk installation
-    ${viadaemon} $vm_ip "d:\\x86\\kitsetup.exe /dc:\\winddk /g\"Build Environment\" /g\"Network Samples\""
-    #./viadaemon -L ddk-build.bat -F "C:\\winddk\\ddk-build.bat" $vm_ip ;
+    ${viadaemon} $tgt_addr "d:\\x86\\kitsetup.exe /dc:\\winddk /g\"Build Environment\" /g\"Network Samples\""
+    #./viadaemon -L ddk-build.bat -F "C:\\winddk\\ddk-build.bat" $tgt_addr ;
     xrt-copy-file local_path=$TESTLIB_PATH/../perf/ filename=ddk-build.bat remote_path="C:\\\\winddk\\\\"
 }
 
@@ -72,9 +62,7 @@ function workload-ddk-build()
 {
     $arg_parse
 
-    vm-helper-get-ip
-
-    xrt-daemon ${vm_ip} \"c:\\WINDDK\\ddk-build.bat\"
+    xrt-daemon2 \"c:\\WINDDK\\ddk-build.bat\"
 }
 
 function workload-ddk-build-set-testtype()
@@ -87,9 +75,9 @@ function workload-sqlio()
 {
     $arg_parse
 
-    vm-helper-get-ip
+    tgt-helper addr
 
-    $TESTLIB_PATH/../viadaemon.py $vm_ip "\"C:\\Program Files\\SQLIO\\sqlio.exe\" -kW -o64 -b256 -s600" 
+    $TESTLIB_PATH/../viadaemon.py $tgt_addr "\"C:\\Program Files\\SQLIO\\sqlio.exe\" -kW -o64 -b256 -s600" 
     #xrt-daemon2 "\"C:\\Program\ Files\\SQLIO\\sqlio.ex\""
 }
 
@@ -113,20 +101,11 @@ function workload-fail-runtime-set-testtype()
 # Setup: xenbuild/xen-unstable.hg in a buildable state, and all build requirements
 function workload-hello()
 {
-    local j
-
-    j=6
-
     $arg_parse
 
-    [[ -n "$vm_name" ]] || [[ -n "$vm_ip" ]] || fail "Need either vm_name or vm_ip"
+    tgt-helper addr
 
-    if [[ -z "$vm_ip" ]] ; then
-	vm-wait-ip host=$host vm_name=$vm_name
-	vm_ip=$ret_vm_ip
-    fi
-
-    ssh root@${vm_ip} "echo hello"
+    ssh-cmd "echo hello"
 }
 
 function workload-hello-set-testtype()
@@ -149,17 +128,19 @@ function time-ssh-cmd()
 {
    $arg_parse
 
-   $requireargs ip cmd resultbase
+   tgt-helper addr
 
-   tempfile=$(ssh root@${ip} "mktemp /tmp/xenlib-timeXXXXXX")
+   $requireargs cmd resultbase
+
+   tempfile=$(ssh-cmd "mktemp /tmp/xenlib-timeXXXXXX")
 
    info tempfile $tempfile
 
    info cmd $cmd
 
-   ssh root@$ip "/usr/bin/time -f %e -o$tempfile bash -c \"$cmd\"" >> ${resultbase}.output
+   ssh-cmd "/usr/bin/time -f %e -o$tempfile bash -c \"$cmd\"" >> ${resultbase}.output
 
-   scp root@$ip:$tempfile ${resultbase}.time
+   scp root@$tgt_addr:$tempfile ${resultbase}.time
 
 }
 
@@ -211,7 +192,7 @@ function mytest()
 
 function runtest-null()
 {
-    echo Null: $@ vm_name $vm_name
+    echo Null: $@ tgt_name $tgt_name
 }
 
 function runtest()
