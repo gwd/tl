@@ -20,10 +20,9 @@ sub foundip
 {
     my $tmac, $tip, $tipnet_n;
 
-    $hostnet_n = $hostip_n & $hostmask_n;
-    
     ($tmac,$tip)=@_;
 
+    # Only log 
     $tipnet_n = ip2n($tip) & $hostmask_n;
 
     #printf "%x %x %x %x\n",$hostmask_n,$hostip_n,ip2n($tip),$tipnet_n;
@@ -49,18 +48,31 @@ sub foundip
 
 sub hostnet
 {
-    $_=`ifconfig $bridge`;
-    /inet addr:([0-9.]+)/ || die "Cannot find xenbr0 addr: $output";
+    $_=`ip addr show dev $bridge`;
+    /inet ([0-9.]+)\/([0-9]+) / || die "Cannot find $bridge addr/shift: $output";
     $hostip=$1;
-    print STDERR "Host ip: $hostip\n";
+    $hostmask_prefix=$2;
+    print STDERR "Host ip: $hostip prefix: $hostmask_prefix\n";
     
-    /Mask:([0-9.]+)/ || die "Cannot find netmask: $output";
-    $hostmask=$1;
-    print STDERR "Host mask: $hostmask\n";
-    
+    # Convert to numbers so that we can easily do bitwise operations on them
     $hostip_n=ip2n($hostip);
-    $hostmask_n=ip2n($hostmask);
+    $hostmask_n = (((1<<32)-1) << (32-$hostmask_prefix)) & ((1<<32)-1);
     $hostnet_n = $hostip_n & $hostmask_n;
+    printf STDERR "Hostmask: 0x%x\n", $hostmask_n;
+
+    # Sanity check comparing to old way
+    if(0) {
+	$_=`ifconfig $bridge`;
+	# /inet addr:([0-9.]+)/ || die "Cannot find $bridge addr: $output";
+	/Mask:([0-9.]+)/ || die "Cannot find netmask: $output";
+	$t_hostmask=$1;
+	print STDERR "Test host mask: $t_hostmask\n";
+	$t_hostmask_n=ip2n($t_hostmask);
+	printf STDERR "Test hostmask: 0x%x\n", $t_hostmask_n;
+	if ($t_hostmask_n != $hostmask_n) {
+	    die;
+	}
+    }
 }
 
 open ARPLOG, ">", "/var/local/arp.log";
@@ -106,13 +118,6 @@ while(<TCPDUMP>) {
 	foundip $2,$1;
     }
     
-    #        myres.append(re.compile(r"(?P<ip>[0-9.]+) is-at "
-    #                                "(?P<mac>[0-9a-f:]+)"))
-    #        myres.append(re.compile(r"> (?P<mac>[0-9a-f:]+).*> "
-    #                                "(?P<ip>[0-9.]+).bootpc: BOOTP/DHCP, "
-    #                                "Reply"))
-    #        myres.append(re.compile(r"\s+(?P<mac>[0-9a-f:]+)\s+>\s+Broadcast.*"
-    #                                "ARP.*tell\s+(?P<ip>[0-9.]+)"))
 }
 
 close TCPDUMP
