@@ -15,8 +15,8 @@ function xrt-daemon()
 
     #quote-array args
 
-    echo "$GWD_TESTLIB_PATH/../viadaemon.py $@"
-    $GWD_TESTLIB_PATH/../viadaemon.py $@
+    echo "$TESTLIB_PATH/../viadaemon.py $@"
+    $TESTLIB_PATH/../viadaemon.py $@
 }
 
 function xrt-daemon2()
@@ -29,8 +29,8 @@ function xrt-daemon2()
 
     vm-helper-get-ip
 
-    info $GWD_TESTLIB_PATH/../viadaemon.py $vm_ip "${args[@]}"
-    $GWD_TESTLIB_PATH/../viadaemon.py $vm_ip "$args"
+    info $TESTLIB_PATH/../viadaemon.py $vm_ip "${args[@]}"
+    $TESTLIB_PATH/../viadaemon.py $vm_ip "$args"
 }
 
 function xrt-daemon-wait()

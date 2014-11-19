@@ -27,7 +27,7 @@ cfg_xrt_daemon_port=8936
 
 
 # Stuff relating to booting
-cfg_boot_pxe_config_path=$GWD_TESTLIB_PATH/../install/
+cfg_boot_pxe_config_path=$TESTLIB_PATH/../install/
 cfg_isosr_path="filer02:/vol/groups/images/autoinstall"
 cfg_isosr_mount_point="/misc/iso"
 

@@ -118,28 +118,3 @@ function boot-config-cleanup()
 
     boot-config-cleanup-${boot_method} ${bargs[@]}
 }
-
-## Unit test individual functions
-function main()
-{
-    local cmd;
-
-    if [[ "$#" -eq "0" ]] ; then
-	echo "Usage: $0 function-name [arguments...]"
-	exit 1
-    fi
-
-    args=($@)
-
-    # Run first arg, pass the rest
-    ${args[0]} ${args[@]:1}
-
-    if ! [[ -z "$RET" ]] ; then
-	echo $RET
-    fi
-}
-
-# Only run main if this is not being included as a library
-if [[ -z "$GWD_LIB" ]] ; then
-    main $@
-fi

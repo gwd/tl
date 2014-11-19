@@ -26,6 +26,15 @@ done"
 
 arg_parse="eval $arg_parse_cmd"
 
+# FIXME: Get rid of this?
+function pop()
+{
+    local _var
+    _var="$1";
+
+    eval "${_var}=(\"\${${_var}[@]:1}\")"
+}
+
 function die()
 {
    echo FATAL $@
@@ -167,6 +176,21 @@ function cfg_override()
 	ret_eval="$2=\$$1"
     fi
 }
+
+# Used to run commands that must be done inside a network through a gateway
+# 
+# To use, set TESTLIB_REMOTE=true and TESTLIB_GATEWAY to the ssh gateway to use.
+: ${TESTLIB_REMOTE:=false}
+function gateway-cmd
+{
+    $requireargs TESTLIB_GATEWAY
+
+    echo ssh "${TESTLIB_GATEWAY}" tl $_cmd "$@"
+    ssh "${TESTLIB_GATEWAY}" tl $_cmd "$@"
+}
+
+gateway_cmd="if \"\${TESTLIB_REMOTE}\" ; then _cmd=\"\$FUNCNAME\" ; gateway-cmd \"\$@\" ; return ; fi"
+gateway_override="eval $gateway_cmd"
 
 function help()
 {

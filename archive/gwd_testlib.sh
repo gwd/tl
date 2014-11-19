@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ -z "$GWD_TESTLIB_PATH" ]] ; then
-    echo ERROR GWD_TESTLIB_PATH not set
+if [[ -z "$TESTLIB_PATH" ]] ; then
+    echo ERROR TESTLIB_PATH not set
     exit 1
 fi
 
@@ -147,13 +147,13 @@ function pop()
     eval "${_var}=(\"\${${_var}[@]:1}\")"
 }
 
-. $GWD_TESTLIB_PATH/xllib.sh
-. $GWD_TESTLIB_PATH/xelib.sh
-. $GWD_TESTLIB_PATH/xrtlib.sh
-. $GWD_TESTLIB_PATH/bootlib.sh
-. $GWD_TESTLIB_PATH/guestlib.sh
-. $GWD_TESTLIB_PATH/perflib.sh
-. $GWD_TESTLIB_PATH/defcfg.sh
+. $TESTLIB_PATH/xllib.sh
+. $TESTLIB_PATH/xelib.sh
+. $TESTLIB_PATH/xrtlib.sh
+. $TESTLIB_PATH/bootlib.sh
+. $TESTLIB_PATH/guestlib.sh
+. $TESTLIB_PATH/perflib.sh
+. $TESTLIB_PATH/defcfg.sh
 
 # Load extra config stuff
 if [[ -n "$GWD_TESTLIB_CONFIG" ]] ; then
@@ -544,7 +544,7 @@ function wait-for-port()
 if $GWD_TESTLIB_REMOTE ; then
 function wait-for-port()
 {
-    ssh elijah '$GWD_TESTLIB_PATH/gwd_testlib.sh' wait-for-port "$@"
+    ssh elijah '$TESTLIB_PATH/gwd_testlib.sh' wait-for-port "$@"
 }
 fi
 

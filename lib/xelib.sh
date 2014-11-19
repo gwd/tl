@@ -13,7 +13,7 @@ function xe()
 
     echo "gwd_xe host ${host} host_pwd ${host_pwd} cmd '${args[@]}'" 1>&2
 
-    $GWD_TESTLIB_PATH/gwd_xe -s ${host} -pw ${host_pwd} ${args[@]}
+    $TESTLIB_PATH/gwd_xe -s ${host} -pw ${host_pwd} ${args[@]}
 }
 
 function xe-vm-start()
@@ -64,7 +64,7 @@ function xe-wait-for-xapi()
 
     if ! ${dry_run} ; then
 	echo -n "INFO Waiting for ${host} to respond to xapi requests"
-	while ! $GWD_TESTLIB_PATH/gwd_xe -s ${host} -pw ${host_pwd} help >& /dev/null \
+	while ! $TESTLIB_PATH/gwd_xe -s ${host} -pw ${host_pwd} help >& /dev/null \
 	    && [[ $time -lt $timeout ]] ; do
 	    echo -n "."
 	    time=$(($time+$interval))
@@ -109,7 +109,7 @@ function xe-wait-for-host()
 
     if ! ${dry_run} ; then
 	echo -n "INFO Waiting for host $host uuid ${host_uuid} to be enabled"
-	while [[ $($GWD_TESTLIB_PATH/gwd_xe -s ${host} -pw ${host_pwd} host-param-get uuid=${host_uuid} param-name=enabled) != "true" ]] \
+	while [[ $($TESTLIB_PATH/gwd_xe -s ${host} -pw ${host_pwd} host-param-get uuid=${host_uuid} param-name=enabled) != "true" ]] \
 	    && [[ $time -lt $timeout ]] ; do
 	    echo -n "."
 	    time=$(($time+$interval))

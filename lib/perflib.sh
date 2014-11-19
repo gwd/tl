@@ -48,7 +48,7 @@ function workload-vm-boot-set-testtype()
 function workload-ddk-build-install()
 {
     local viadaemon 
-    viadaemon=$GWD_TESTLIB_PATH/../viadaemon.py
+    viadaemon=$TESTLIB_PATH/../viadaemon.py
 
     $arg_parse
 
@@ -65,7 +65,7 @@ function workload-ddk-build-install()
     info Running ddk installation
     ${viadaemon} $vm_ip "d:\\x86\\kitsetup.exe /dc:\\winddk /g\"Build Environment\" /g\"Network Samples\""
     #./viadaemon -L ddk-build.bat -F "C:\\winddk\\ddk-build.bat" $vm_ip ;
-    xrt-copy-file local_path=$GWD_TESTLIB_PATH/../perf/ filename=ddk-build.bat remote_path="C:\\\\winddk\\\\"
+    xrt-copy-file local_path=$TESTLIB_PATH/../perf/ filename=ddk-build.bat remote_path="C:\\\\winddk\\\\"
 }
 
 function workload-ddk-build()
@@ -89,7 +89,7 @@ function workload-sqlio()
 
     vm-helper-get-ip
 
-    $GWD_TESTLIB_PATH/../viadaemon.py $vm_ip "\"C:\\Program Files\\SQLIO\\sqlio.exe\" -kW -o64 -b256 -s600" 
+    $TESTLIB_PATH/../viadaemon.py $vm_ip "\"C:\\Program Files\\SQLIO\\sqlio.exe\" -kW -o64 -b256 -s600" 
     #xrt-daemon2 "\"C:\\Program\ Files\\SQLIO\\sqlio.ex\""
 }
 
