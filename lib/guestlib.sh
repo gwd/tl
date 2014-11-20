@@ -229,7 +229,7 @@ function display-tunnel()
 
     if [[ -z "$loffset" ]] ; then
 	local loffset
-	loffset="1"
+	loffset="1" 
     fi
 
     lport=$(($rport+$loffset))

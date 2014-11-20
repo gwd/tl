@@ -212,7 +212,7 @@ function runtest()
     workload-${workload}-set-testtype
 
     # workload and test-specific args inherited
-    runtest-$testtype ${args[@]}
+    runtest-$testtype "${args[@]}"
     # NB: $? passed up by default
 }
 
@@ -322,7 +322,7 @@ function xendeb()
     #info Letting host settle for 30s
     #sleep 30
 
-    ${args[@]} || return 1
+    "${args[@]}" || return 1
     # $? passed back
 }
 
@@ -344,7 +344,7 @@ function iterate()
     for i in $vals ; do
 	nextbase=$resultbase.i$i
 	info Running iteration $nextbase
-	${args[0]} resultbase=$nextbase ${args[@]:1} || break
+	${args[0]} resultbase=$nextbase "${args[@]:1}" || break
     done
 
     # FIXME: not general
@@ -408,7 +408,7 @@ function varset()
     if [[ -n "$tags" ]] ; then
 	parse-comma-array tags $tags
     else
-	tags=(${vals[@]})
+	tags=("${vals[@]}")
     fi
 
     echo var $var values ${vals[@]} tags ${tags[@]}
