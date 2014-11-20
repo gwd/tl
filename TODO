@@ -1,0 +1,34 @@
+Documentation
+ - Document hl functionality
+ - Write introduction to using testlib in your own scripts
+
+Clean-up
+ - Make lib/wait.sh functions more consistent
+ - Move arp-get-ip into the hl library
+ - Move acpi-shutdown into xllib
+ - Remove dead / deprecated code
+ - Make vm-wait return a domain id?
+ - Unify xl-vm-wait[-for]-shutdown
+
+Config system
+ - Work on system for specifying things like host type, guest type, &c
+ - Improve "default value" system (right now it's all over the place)
+
+Tarball functionality
+ - Import host-side tarball creation scripts
+ - Add support for debian tarballs (on both sides)
+
+lib/perflib.sh
+ - Get core perflib functionality running again
+ - Update test scripts, move to separate files
+
+lib/bootlib.sh
+ - Document
+ - Update / see if we still need it
+ - See if there's a sensible way to deal with 
+
+Host install?
+ - Needs total refresh
+
+lib/xelib.sh
+ - Maybe someone who cares can get this working again
