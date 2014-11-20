@@ -1,0 +1,184 @@
+= TestLib =
+
+TestLib is a set of bash scripts I've set up to take a lot of the
+drudge work out of the testing side of development.  They started as
+an attempt to make a framework for running tests with lots of
+different ; but they became useful for doing a lot of things on a
+daily basis.
+
+There are several distinguishing characteristic of this library.
+
+* The ability to use it either as a command-line tool, or to construct
+your own scripts with which to run specific tests.
+
+* The use of "[var]=[value]" 
+
+* The way it handles a lot of the waiting for you.  If you say to ssh
+to a specific VM, it will wait for that VM to be created; then it will
+wait until it has an IP address; then it will wait for the ssh port to
+appear; and it will finally ssh in.  This principle holds for a number
+of commands, which makes it a lot easier to "pipeline" activites when
+doing testing and development.
+
+* The way that it deals with nested virtualization: There is a
+consistent way to name a VM running on a physical host as a VM running
+on a virtual host (however many levels of nesting).
+
+
+= Setting up testlib =
+
+The first step is to place testlib in $HOME/tl/.
+
+Testlib contains functions useful in both 
+
+Then make sure that the appropriate command (hl or tl) is in your
+path.  One simple way to do that is something like the following:
+
+$ ln -s $HOME/tl/tl ~/bin/
+
+
+
+= Test machine setup =
+
+Many of the testlib commands want to translate a guest name into a
+guest IP address.  But all that they normally have available is the MAC
+address.
+
+To help this, test machines require one extra bit of setup; you need
+to add the following lines to your rc.local (or make sure they are run
+some other way):
+
+---
+if [ -e /root/tl/arplog.pl ] ; then
+ echo Starting arplog
+ /root/tl/arplog.pl &
+fi
+
+touch /tmp/.finished-booting
+---
+
+You'll also want to copy your ssh keys into all the machines you may
+want to ssh into.
+
+
+= Concepts =
+
+* TARGETSPEC
+
+TARGETSPEC is a way of specifying a particular machine, physical or
+virtual, as the target of an activity.  It is particularly useful in
+cases where you're using nested virtualization.  It will almost always
+be specified by "tgt=[whatever]".
+
+TARGETSPEC is a list of one or more machines separated by colons.  The
+first machine should be a physical machine; subsequenst ones should be
+virtual machines running on the previous machine.
+
+In the context of commands that take a TARGETSPEC, "target" means the
+last item on the list, and "host" means whatever machine is hosting
+that machine (if any).
+
+Some examples:
+
+ - tgt=kodo2 
+
+    Target is the host named kodo2; host does not exist.  This should
+    be resolvable either by DNS or the local /etc/hosts command.
+
+ - tgt=kodo2:c6-test
+
+    Target is the VM named c6-test running on kodo2.  Host is kodo2.
+
+ - tgt=kodo2:c6-test:c6-cloud
+
+    Target is the VM named c6-cloud, running inside the VM named
+    c6-test, which itself is running on kodo2.  Host is c6-test.
+
+In order to use this, each machine acting as a "host" needs to have
+arplog running (see "Test machine setup").
+
+
+= Common tl commands =
+
+* tgt-ssh tgt=TARGETSPEC [command]
+
+tgt-ssh will wait for TARGETSPEC to come up and then ssh into it,
+optionally issuing commands (like ssh).
+
+If this is a VM, it will wait until the VM appears on the host.  When
+it does appear, it will wait until it draws an IP address.  Once it's
+drawn an IP address, it will wait for the ssh port to respond;
+finally, it will ssh in.
+
+At the moment this assumes you'll be using "root".
+
+
+* tgt-addr tgt=TARGETSPEC
+
+Find an address (either hostname or IP address) of the target, and
+print it on stdout.
+
+Useful in commands like the following:
+
+$ scp file root@$(tl tgt-addr tgt=kodo2:c6-cloud:c6-05):
+
+
+* ssh-shutdown tgt=TARGETSPEC
+
+ssh into target and issue "shutdown -h now".  Just a faster way of 
+
+
+* vm-console tgt=TARGETSPEC
+
+Run a console for the target.  This will ssh into the target vm's host
+and run "xl console [vm-name]"
+
+
+* vm-vnc tgt=TARGETSPEC [loffset=N]
+
+This will open up a vnc viewer for the specified target over an ssh
+connection.
+
+It will:
+ - Wait for the target to appear on the host
+ - Look up the vnc port of the target on the host
+ - Make an ssh tunnel, mapping a port on your machine to the vnc port
+ on the host
+ - Run vncviewer locally pointing to that port
+
+Parameters:
+
+  loffset: Local offset to add into the remote port
+
+    Normally vm-vnc will match the port of the host to the port on
+    your test box; that will make sure that the vnc ports of different
+    VMs don't conflict.  But if you're running VMs on more than one
+    host, then the VNC ports *may* conflict.  By selecting a different
+    loffset (differing by about 10) for each host, you can avoid
+    conflict.
+
+
+* vm-shutdown [wait=(true|false)] [acpi=(true|false)]
+
+Shutdown the vm.
+
+If acpi=false (default), issue "xl shutdown"; otherwise issue "xl
+trigger [target] power".
+
+If wait=true (default) wait for the target to disappear from the host;
+otherwise it returns as soon as the shutdown command is finished.
+
+
+* vm-wait tgt=TARGETSPEC
+
+Wait for the target domain to appear on the host.
+
+
+* vm-wait-shutdown tgt=TARGETSPEC
+
+Wait for the target domain do disappear from the host.
+
+
+* acpi-shutdown tgt=TARGETSPEC
+
+Issue the "xl trigger [vm-name] power" command.
