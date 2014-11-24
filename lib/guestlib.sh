@@ -216,6 +216,8 @@ function display-tunnel()
 
     $arg_parse
 
+    [[ -z "${host}" ]] && host="${host_addr}"
+
     $requireargs host rport
 
     case "$ssh_htype" in
