@@ -62,7 +62,7 @@ EOF
     set +ex
 }
 
-TESTLIB_HELP+=($'tb-make-image [options:basename,format,size,tempdir,imagedir,dev]')
+TESTLIB_HELP+=($'tb-make-image [options:basename,format,backendtype,size,tempdir,imagedir,dev]')
 function tb-make-image()
 {
     set -ex 
@@ -139,7 +139,7 @@ EOF
     set +ex
 }
 
-TESTLIB_HELP+=($'tb-make-config [options:basename,id,type=(pv|hvm),format,memory,vcpus,imagedir,confdir]')
+TESTLIB_HELP+=($'tb-make-config [options:basename,id,type=(pv|hvm),format,backendtype,memory,vcpus,imagedir,confdir]')
 function tb-make-config()
 {
     local blockspec
