@@ -1,5 +1,7 @@
 #!/bin/bash
 
+: ${dry_run:=false}
+
 TESTLIB_HELP=()
 
 arg_parse_cmd=\
