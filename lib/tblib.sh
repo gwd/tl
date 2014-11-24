@@ -62,14 +62,15 @@ EOF
     set +ex
 }
 
+TESTLIB_HELP+=($'tb-make-image [options:basename,format,size,tempdir,imagedir,dev]')
 function tb-make-image()
 {
     set -ex 
 
     $arg_parse
 
-    : ${wdir:="/tmp"}
-    : ${odir:="/images"}
+    : ${tempdir:="/tmp"}
+    : ${imagedir:="/images"}
     : ${basename:="c6"}
     : ${format:="vhd"}
     : ${size:="2048"}
@@ -80,12 +81,12 @@ function tb-make-image()
 	exit 1
     fi
 
-    mount=$wdir/centos-chroot
-    tarball=$odir/c6.tar.gz
+    mount=${tempdir}/centos-chroot
+    tarball=${imagedir}/c6.tar.gz
 
     case $format in
 	vhd|raw|qcow2)
-	    image=$odir/$basename-NN.$format
+	    image=${imagedir}/$basename-NN.$format
 	    ;;
 	*)
 	    echo Unknown imagetype $imagetype!
@@ -138,6 +139,7 @@ EOF
     set +ex
 }
 
+TESTLIB_HELP+=($'tb-make-config [options:basename,id,type=(pv|hvm),format,memory,vcpus,imagedir,confdir]')
 function tb-make-config()
 {
     local blockspec
