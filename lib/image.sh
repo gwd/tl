@@ -59,7 +59,14 @@ function image-attach()
 
     xl block-attach 0 ${blockspec}
     # !!!!
-    usleep 100000
+    if [[ -e /bin/usleep ]] ; 
+	usleep 100000
+    else
+	sleep 1
+    fi
+    
+    # Pre 4.5, xl block-attach returned success even if the attach failed
+    [[ -e /dev/${dev} ]] || fail "block-attache failed, /dev/${dev} not present!"
 }
 
 function image-detach()
