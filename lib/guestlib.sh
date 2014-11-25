@@ -47,7 +47,7 @@ function vm-wait-ip()
     fi
 
     # host inherited
-    ret_vm_ip=$(ssh-cmd "sut/arp-get-ip ${vm_mac}")
+    ret_vm_ip=$(ssh-cmd "tl/sut/arp-get-ip ${vm_mac}")
 
     info $vm_name ip $ret_vm_ip
 }
