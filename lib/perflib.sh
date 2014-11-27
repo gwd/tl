@@ -177,6 +177,7 @@ function mytest()
 function runtest-null()
 {
     echo Null: $@ tgt_name $tgt_name
+    echo "Passed" > $resultbase.result
 }
 
 function runtest()
