@@ -120,7 +120,7 @@ function error()
 function status()
 {
    echo STATUS $@ 1>&2
-   $status_popup && (zenity --info --text="$@" &)
+   #$status_popup && (zenity --info --text="$@" &)
    return 0
 }
 
