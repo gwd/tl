@@ -78,9 +78,6 @@ function wait-for-boot()
     cfg_override cfg_timeout_boot timeout     ; eval $ret_eval
     cfg_override cfg_timeout_ssh  timeout_ssh ; eval $ret_eval
 
-    # FIXME Require host=foo
-    host=${args[0]}
-
     $requireargs host
 
     wait-for-online ${host} || return 1
@@ -92,32 +89,6 @@ function wait-for-boot()
     return 0
 }
 
-function wait-for-host()
-{
-    local host
-    local sp_orig
-
-    # Read and process [varname]=[value] options
-    $arg_parse
-
-    # FIXME
-    host=${args[0]}
-
-    $requireargs htype host
-    
-    # Temporarily disable pop-ups for status reports
-    sp_orig="${status_popup}"
-    status_popup="false"
-    wait-for-boot ${host} || return 1
-    status_popup="${sp_orig}"
-
-    time-command ${htype}-host-ready host=${host} || return 1
-    info Host ready after $ret_time
-
-    return 0
-}
-
-#
 # wait-for-offline host
 # Ping a host every second until it doesn't respond.
 function wait-for-offline()
@@ -133,8 +104,6 @@ function wait-for-offline()
 
     # Read and process [varname]=[value] options
     $arg_parse
-
-    host=${args[0]}
 
     $requireargs host
 
@@ -162,9 +131,6 @@ function wait-for-reboot()
 
     cfg_override cfg_timeout_boot timeout     ; eval $ret_eval
     cfg_override cfg_timeout_ssh  timeout_ssh ; eval $ret_eval
-
-    # FIXME Require host=foo
-    host=${args[0]}
 
     $requireargs host
 
