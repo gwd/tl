@@ -58,15 +58,12 @@ function image-attach()
     image-get-blockspec var=blockspec
 
     xl block-attach 0 ${blockspec}
-    # !!!!
-    if [[ -e /bin/usleep ]] ; then
-	usleep 100000
-    else
-	sleep 1
-    fi
-    
-    # Pre 4.5, xl block-attach returned success even if the attach failed
-    [[ -e /dev/${dev} ]] || fail "block-attach failed, /dev/${dev} not present!"
+
+    # Pre 4.5, xl block-attach returned success even if the attach
+    # failed.  This is complicated by the fact that block-attach also
+    # returns before the device actually appears.  Wait for it for 5
+    # seconds then give up.
+    retry timeout=5 eval "[[ -e /dev/${dev} ]]" || fail "block-attach failed, /dev/${dev} not present!"
 }
 
 function image-detach()

@@ -29,43 +29,25 @@ function wait-for-port()
     local host
     local port
     local invert=false # false = wait to appear, true = wait to disappear
+    local cond="appear"
 
     local time=0
-    local bang='!';
 
     # Read and process [varname]=[value] options
     $arg_parse
 
     $requireargs host timeout port interval
 
-    $invert && bang="";
+    $invert && cond="disappear"
 
-    if ! ${dry_run} ; then
-	echo -n "INFO Probing host ${host} port ${port} timeout ${timeout}"
-	while eval "$bang echo | nc -z -w 1 ${host} ${port} >& /dev/null" && [[ $time -lt $timeout ]] ; do
-	    echo -n "."
-	    time=$(($time+$interval))
-	    sleep $interval
-	done
-	echo
-    fi
-
-    if ! [[ $time -lt $timeout ]] ; then
-	if $invert ; then
-	    echo "INFO Timed out waiting for port ${port} to close on ${host}" 
-	else
-	    echo "ERROR Timed out waiting for port ${port} to open on ${host}" 
-	fi
-	return 1
-    else
-	if $invert ; then
-	    echo "INFO Port ${port} disappeared after ${time}"
-	else
-	    echo "INFO Port ${port} appeared after ${time}"
-	fi
+    echo -n "INFO Probing host ${host} port ${port} timeout ${timeout}" 1>&2
+    if retry eval "echo | nc -z -w 1 ${host} ${port} >& /dev/null" ; then
+	info "Port ${port} ${cond}ed after ${retry_time}"
 	return 0
+    else
+	info "Timed out waiting for port ${port} to ${cond} on ${host}" 
+	return 1
     fi
-
 }
 
 function wait-for-boot()
@@ -108,17 +90,12 @@ function wait-for-offline()
     $requireargs host
 
     info "Waiting for ${host} to stop responding to pings"
-    while ! $dry_run && ping -c 1 -W ${ping_timeout} ${host} >& /dev/null && [[ ${wait_time} -lt ${timeout} ]] ; do
-	sleep ${interval}
-	wait_time=$((${wait_time}+${interval}))
-    done
-
-    if $dry_run || [[ ${wait_time} -lt ${timeout} ]] ; then
-	status "Host ${host} offline"
-	return 0
+    if retry invert=true eval "ping -c 1 -W ${ping_timeout} ${host} >& /dev/null" ; then
+     	status "Host ${host} offline"
+     	return 0
     else
-	echo "ERROR Timeout waiting for ${host} to go offline"
-	return 1
+     	echo "ERROR Timeout waiting for ${host} to go offline"å
+     	return 1
     fi
 }
 

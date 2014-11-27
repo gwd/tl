@@ -233,6 +233,64 @@ function gateway-cmd
 gateway_cmd="if \"\${TESTLIB_REMOTE}\" ; then _cmd=\"\$FUNCNAME\" ; gateway-cmd \"\$@\" ; return ; fi"
 gateway_override="eval $gateway_cmd"
 
+# Retry a command until it succeeds, or until the number of retries / timeout is exceeded.
+#
+# Condition can be inverted by passing invert=true
+function retry()
+{
+    local invert
+    local ret
+    local start
+    local now
+    local elapsed
+    local bang
+
+    $arg_parse
+
+    [[ -n "$retries" ]] || [[ -n "timeout" ]] || info "WARNING: $FUNCNAME: No retries or timeout, will loop forever"
+
+    default invert "false" ; $default_post
+    default interval "1" ; $default_post
+    default dot "true" ; $default_post
+
+    $invert && bang="!";
+
+    start=$(date +%s)
+
+    while true ; do
+	#info "Running ${args[@]}"
+	retry_result=$(${args[@]})
+	ret="$?"
+	ret=$(($bang $ret))
+
+	if [[ "$ret" = "0" ]] ; then
+	    break
+	fi
+
+	if [[ -n "$retries" ]] ; then
+	    retries=$(($retries-1))
+	    [[ $retries -lt 0 ]] && break
+	fi
+
+	if [[ -n "$timeout" ]] ; then
+	    now=$(date +%s)
+	    elapsed=$(($now-$start))
+	    [[ $elapsed -gt $timeout ]] && break
+	fi
+
+	$dot && echo -n . 1>&2
+
+	sleep $interval
+    done
+
+    $dot && echo 1>&2
+
+    now=$(date +%s)
+    retry_time=$(($now-$start))
+
+    return $ret
+}
+
 function help()
 {
     for i in "${TESTLIB_HELP[@]}" ; do

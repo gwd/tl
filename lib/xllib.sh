@@ -23,26 +23,34 @@ function xl-vm-shutdown()
     tgt-helper
 
     info "Shutting down vm ${tgt_name}" ; 
-    ${dry_run} || ssh-cmd "xl shutdown ${tgt_name}" || return 1
+    ${dry_run} || ssh-cmd host=$host_addr "xl shutdown ${tgt_name}" || return 1
 }
 
 # This explicitly "returns" domid
 function xl-vm-wait()
 {
-    while ! domid=$(ssh-cmd "xl domid $tgt_name 2>/dev/null") ; do
-	info Waiting for vm $tgt_name 
-	sleep 1
-    done
+    default timeout 600 ; $default_post
+
+    $requireargs host_addr tgt_name
+
+    info "Waiting for vm $tgt_name to appear"
+
+    retry ssh-cmd host=$host_addr "xl domid $tgt_name 2>/dev/null"
+
+    info "VM $tgt_name running"
+    domid="$retry_result"
 }
 
 function xl-vm-wait-shutdown()
 {
     local domid
 
-    while domid=$(ssh-cmd "xl domid $vm_name 2>/dev/null") ; do
-	info Waiting for vm $vm_name to shutdown
-	sleep 1
-    done
+    $requireargs host_addr tgt_name
+
+    info "Waiting for vm $tgt_name to disappear"
+    retry invert=true ssh-cmd host=$host_addr "xl domid $tgt_name 2>/dev/null"
+
+    info "VM $tgt_name on $host_addr shut down"
 }
 
 
@@ -55,7 +63,6 @@ function xl-vm-get-mac()
     local vm_name
     local t1
     local t2
-    local retries=2
 
     $arg_parse
 
@@ -63,32 +70,14 @@ function xl-vm-get-mac()
 
     xl-vm-wait
 
-    while true ; do
-	t1=$(ssh-cmd "xl network-list $vm_name | grep '^0 '")
-	ret=$?
+    retry timeout=5 ssh-cmd host=$host_addr "xl network-list $tgt_name | grep '^0 '"
 
-	if [[ "$ret" = "0" ]] ; then
-	    break
-	fi
-
-	if [[ $retries -gt 0 ]] ; then
-	    retries=$(($retries-1))
-	    info No mac for ${vm_name}, retrying...
-	else
-	    info No mac for ${vm_name}, giving up
-	    return 1
-	fi
-    done
-
-    #info Testline $vm_mac
-    t2=($t1)
+    t2=($retry_result)
 
     ret_vm_mac=${t2[2]}
 
     info ${vm_name} mac ${ret_vm_mac}
     
-
-    #grep -i $(xl network-list a0 | grep "^0 " | awk '{print $3}') /var/local/arp.log | tail -1 | awk '{print $2}'
     eval "return $ret"
 }
 
