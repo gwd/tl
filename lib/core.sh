@@ -28,6 +28,63 @@ done"
 
 arg_parse="eval $arg_parse_cmd"
 
+# Pass in either the current function name, or the name of the script
+requireargs="eval _func=\"\$FUNCNAME\" ; eval [[ -n \\\"\$_func\\\" ]] || _func=\$0 ; eval _require-args \$_func"
+
+function _require-args()
+{
+    local _arg
+    local _args
+    local fail_popup
+
+    _args=($@)
+
+    fail_popup=false
+
+    for _arg in ${_args[@]:1} ; do
+	eval "[[ -n \"\${$_arg}\" ]] || fail \"${_args[0]}: Missing $_arg\""
+    done
+}
+
+function default()
+{
+    # l0: eval i="5"
+    # l1: default_post="eval $1=\"$2\""
+    # l3: eval "if [[ -z \"\$$1\" ]] ; then default_post=\"eval \$1=\\\"$2\\\"\" ; fi"
+    eval "if [[ -z \"\$$1\" ]] ; then default_post=\"eval local \$1=\\\"$2\\\"\" ; else unset default_post ; fi"
+}
+
+function default-test-scratch()
+{
+    eval "i=\"5\""
+    echo "i is $i"
+
+    
+    a="i" 
+    b="6"
+    default_post="eval $a=\\\"$b\\\""
+    echo "default_post: $default_post"
+    $default_post
+    echo "i is $i"
+
+    unset i
+    b=7
+    eval "if [[ -z \"\$$a\" ]] ; then default_post=\"eval \$a=\\\\\\\"$b\\\\\\\"\" ; fi"
+    echo "default_post: $default_post"
+    $default_post
+    echo "i is $i"
+}
+
+function default-test()
+{
+    $arg_parse
+
+    default i "Testing testing" ; $default_post
+    
+    info "default_post $default_post"
+    info "i $i"
+}
+
 # FIXME: Get rid of this?
 function pop()
 {
@@ -139,24 +196,6 @@ function parse-config-array()
 
     eval "${_pcfga_array_var}=(${_pcfga_internal[@]})"
     eval "${_pcfga_reset_array_var}=(${_pcfgr_internal[@]})"
-}
-
-# Pass in either the current function name, or the name of the script
-requireargs="eval _func=\"\$FUNCNAME\" ; eval [[ -n \\\"\$_func\\\" ]] || _func=\$0 ; eval _require-args \$_func"
-
-function _require-args()
-{
-    local _arg
-    local _args
-    local fail_popup
-
-    _args=($@)
-
-    fail_popup=false
-
-    for _arg in ${_args[@]:1} ; do
-	eval "[[ -n \"\${$_arg}\" ]] || fail \"${_args[0]}: Missing $_arg\""
-    done
 }
 
 # Used to make a local cfg_ variable overriding the global one if
