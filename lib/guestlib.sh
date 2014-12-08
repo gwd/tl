@@ -285,7 +285,7 @@ function ssh-ready()
 
     tgt-helper addr
 
-    info "Attempting ssh connect to vm ${vm_ip} timeout ${s_timeout}"
+    info "Attempting ssh connect to addr ${tgt_addr} timeout ${cfg_timeout_ssh}"
     if ! wait-for-port host=${tgt_addr} timeout=${cfg_timeout_ssh} interval=1 port=22 ; then
 	error "Waiting for SSH to appear"
 	return 1;
@@ -296,8 +296,6 @@ function vm-ssh()
 {
     fail "Function no longer in use!"
 }
-
-TESTLIB_HELP+=($'vm-ssh\t\t[vm=VMPATH|host=HOST (vm_name=|vm_ip=)] [ssh commands]')
 
 function tgt-ssh()
 {
@@ -352,9 +350,8 @@ function vm-shutdown()
 
     $requireargs ctype
 
-    [[ -n "$wait" ]] || eval "local wait; wait=true"
-    [[ -n "$acpi" ]] || eval "local acpi; lacpi=false"
-    
+    default wait "true" ; $default_post
+    default acpi "false" ; $default_post
 
     if $acpi ; then
 	acpi-shutdown
