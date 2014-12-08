@@ -7,7 +7,7 @@ function xl-vm-start()
     tgt-helper
 
     info "Starting vm ${tgt_name} on host ${host_addr}" ; 
-    ${dry_run} || ssh-cmd "xl create ${tgt_name}.cfg" || fail "Starting VM ${tgt_name}"
+    ${dry_run} || ssh-cmd host=$host_addr "xl create ${test_config_dir}${tgt_name}.cfg" || fail "Starting VM ${tgt_name}"
     ${dry_run} || sleep 5 
 }
 
@@ -89,7 +89,7 @@ function xl-vm-console()
 
     xl-vm-wait
 
-    ssh-cmd -t "xl console ${tgt_name}"
+    ssh-cmd host=$host_addr -t "xl console ${tgt_name}"
 }
 
 function xl-vm-force-shutdown()
@@ -165,7 +165,7 @@ function xl-vm-get-vnc-port()
 
     vm-wait
     
-    port=$(ssh-cmd "xenstore-read /local/domain/$domid/console/vnc-port")
+    port=$(ssh-cmd host=$host_addr "xenstore-read /local/domain/$domid/console/vnc-port")
 
     echo $port
     ret_remote_port="$port"
