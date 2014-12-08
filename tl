@@ -13,6 +13,7 @@ fi
 
 # Then as many as the sub-libraries as you need
 . ${TESTLIB_PATH}/core.sh
+. ${TESTLIB_PATH}/dev.sh
 . ${TESTLIB_PATH}/wait.sh
 . ${TESTLIB_PATH}/xllib.sh
 . ${TESTLIB_PATH}/xrtlib.sh
