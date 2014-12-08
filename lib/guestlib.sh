@@ -72,9 +72,16 @@ function vm-helper-get-ip()
 
 function tgt-helper()
 {
-    if [[ -n "$tgt_name" ]] ; then 
-	return
+    if [[ "$_stored_tgt" == "$tgt" ]] ; then
+	if [[ -z "$1" && -n "$tgt_name" ]] ; then
+	    unset tgt_addr
+	    return 0
+	elif [[ -n "$1" && -n "$tgt_addr" ]] ; then
+	    return 0
+	fi
     fi
+
+    _stored_tgt="$tgt"
 
     local fn
     local stack
