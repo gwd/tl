@@ -1,16 +1,22 @@
 # Functions related to development
 function tl-sync()
 {
+    local pushpath="."
+
     $arg_parse
 
     tgt-helper addr
 
     if ! [[ -e ./hl ]] ; then
 	[[ -n "${TESTLIB_PATH}" ]] || fail "Must be run from the test repo directory"
-	cd ${TESTLIB_PATH}/..
+	pushpath="${TESTLIB_PATH}/.."
     fi
 
+    pushd "$pushpath"
+
     rsync -avz --delete --exclude=.git ./ root@${tgt_addr}:tl/
+
+    popd
 }
 
 # Functions related to development
@@ -19,11 +25,6 @@ function tl-install()
     $arg_parse
 
     tgt-helper addr
-
-    if ! [[ -e ./hl ]] ; then
-	[[ -n "${TESTLIB_PATH}" ]] || fail "Must be run from the test repo directory"
-	cd ${TESTLIB_PATH}/..
-    fi
 
     # FIXME: Centos-specific
     ssh-cmd "yum install -y rsync"
