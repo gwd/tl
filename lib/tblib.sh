@@ -204,3 +204,38 @@ EOF
 
     echo "Made config file at $config"
 }
+
+# tgt should be the Xen host on which to make the image
+function tb-make-image-remote()
+{
+    $arg_parse 
+
+    tgt-helper addr
+
+    remote-call tb-make-image tempdir imagedir basename backendtype format size dev
+}
+
+# tgt should be the Xen host on which to make the config file
+function tb-make-config-remote()
+{
+    $arg_parse 
+
+    tgt-helper addr
+
+    remote-call tb-make-config imagedir confdir type basename id format backendtype memory vcpus
+}
+
+function tb-install()
+{
+    $arg_parse
+
+    default test_image_dir "/images/" ; $default_post
+
+    $requireargs dev_image_dir
+
+    tgt-helper addr
+
+    ssh-cmd "mkdir -p $test_image_dir" || return 1
+
+    scp $dev_image_dir/c6.tar.gz root@$tgt_addr:$test_image_dir || return 1
+}

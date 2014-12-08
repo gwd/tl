@@ -19,6 +19,7 @@ fi
 . ${TESTLIB_PATH}/bootlib.sh
 . ${TESTLIB_PATH}/guestlib.sh
 . ${TESTLIB_PATH}/perflib.sh
+. ${TESTLIB_PATH}/tblib.sh
 . ${TESTLIB_PATH}/defcfg.sh
 
 

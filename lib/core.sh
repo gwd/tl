@@ -243,6 +243,29 @@ function cfg_override()
     fi
 }
 
+# Call a function remotely, passing in variables when appropriate.
+#
+# tgt-helper should already have been called appropriately before this.
+# 
+# Usage: remote-call function-name [var1 var2 ...]
+function remote-call()
+{
+    local _args=("$@")
+    local _r
+    local _fn="${_args[0]}"
+    local _v
+    
+    for _v in "${_args[@]:1}" ; do 
+	#echo "[[ -n \"\$$_v\" ]] && $_r=\"\$$_r $_v=\$$_v\""
+	eval "[[ -n \"\$$_v\" ]] && _r=\"\$_r $_v=\$$_v\""
+    done
+
+    #eval "echo \$$_r"
+
+    info "Calling hl $_fn $_r"
+    ssh-cmd -- -t "hl $_fn $_r"
+}
+
 # Used to run commands that must be done inside a network through a gateway
 # 
 # To use, set TESTLIB_REMOTE=true and TESTLIB_GATEWAY to the ssh gateway to use.
