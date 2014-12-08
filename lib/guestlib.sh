@@ -185,6 +185,7 @@ function ssh-cmd()
     $arg_parse
 
     if [[ -z "${host}" ]] ; then
+	local host
 	if [[ -n "${tgt_addr}" ]] ; then
 	    host="${tgt_addr}"
 	elif [[ -n "${host_addr}" ]] ; then
