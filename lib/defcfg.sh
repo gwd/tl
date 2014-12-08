@@ -1,6 +1,7 @@
 # Default configuration options
 
 htype="xl"
+ctype="ssh"
 cfg_boot_method="pxe"
 
 # Config options specific to Citrix's setup
