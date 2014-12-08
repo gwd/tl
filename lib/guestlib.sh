@@ -163,9 +163,15 @@ function vm-start()
 
     $requireargs htype
 
+    default wait "true" ; $default_post
+
     tgt-helper
 
+    info "$FUNCNAME: tgt $tgt"
+
     $htype-vm-start host=$host_addr vm_name=$tgt_name "${args[@]}"
+
+    $wait && tgt-ready
 }
 
 # *** WARNING ***
