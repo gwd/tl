@@ -144,6 +144,23 @@ function time-ssh-cmd()
 
 }
 
+function time-command()
+{
+    local start
+    local end
+
+    unset ret_time
+
+    $arg_parse
+
+    start=$(date +%s.%N)
+    echo Timing command "${args[@]}"
+    "${args[@]}" || return 1
+    end=$(date +%s.%N)
+
+    ret_time=$(echo "$end-$start" | bc)
+}
+
 function runtest-runtime()
 {
     local ret
