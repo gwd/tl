@@ -5,6 +5,11 @@
 # Sets of functions relating to creating disk images and config files
 # with different sizes, formats, and operating systems.
 
+function tb-make-tarball()
+{
+    sudo ${TESTLIB_PATH}/../tb-make-tarball.sh
+}
+
 function tb-c6-post()
 {
     set -ex
