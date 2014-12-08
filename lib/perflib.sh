@@ -208,20 +208,13 @@ function boot-shutdown()
 
     $arg_parse
 
-    $requireargs host vm_name
+    tgt-helper
 
-    # Make sure we get a new one
-    unset vm_ip
+    info "Staring ${tgt_name} at time" `date`;
 
-    info "Staring ${vm_name} at time" `date`;
-
-    time-command vm-start host=$host vm_name=$vm_name || return 1
+    time-command vm-start || return 1
     info Create: $ret_time
-    [[ -e "${resultbase}" ]] && echo $ret_time > ${result_base}.create
-
-    time-command vm-ready || return 1
-    info Boot: $ret_time
-    [[ -e "${resultbase}" ]] && echo $ret_time > ${result_base}.boot
+    [[ -n "${resultbase}" ]] && echo $ret_time > ${resultbase}.create
 
     ret=0
 
@@ -229,8 +222,7 @@ function boot-shutdown()
 
     time-command vm-shutdown || return 1
     info Shutdown : $ret_time
-    [[ -e "${resultbase}" ]] && echo $ret_time > ${result_base}.shutdown
-    ret_slen="$ret_time"
+    [[ -n "${resultbase}" ]] && echo $ret_time > ${resultbase}.shutdown
 
     eval "return $ret"
 }
