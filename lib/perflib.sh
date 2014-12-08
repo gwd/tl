@@ -346,51 +346,6 @@ function iterate()
 	info Running iteration $nextbase
 	${args[0]} resultbase=$nextbase "${args[@]:1}" || break
     done
-
-    # FIXME: not general
-    echo "RESULTS $resultbase $(grep -h . $resultbase.*.time)"
-}
-
-# Form: varset vars=x,y,z vals_x=a,b,c [tags_x=A,B,C] ... [command]
-# Will run [command] with vars matched up:
-# - x=a,y=...
-# - x=b,y=...
-function mvarset()
-{
-    local vars
-    local vals
-    local tags
-
-    $arg_parse
-   
-    $requireargs vars resultbase
-
-    parse-comma-array vars $vars
-
-    for var in $vars ; do
-	$requireargs vals_$var
-	parse-comma-array vals $vals
-
-	if [[ -n "$tags" ]] ; then
-	    parse-comma-array tags $tags
-	else
-	    tags=(${vals[@]})
-	fi
-    done
-
-    echo var $var values ${vals[@]} tags ${tags[@]}
-
-    while [[ -n "${vals[@]}" ]] ; do
-	val=${vals[0]};
-	tag=${tags[0]};
-	nextbase=$resultbase.$tag
-	info Running varset $nextbase
-	echo eval ${var}=${val}
-	eval "${var}=${val}"
-	${args[0]} resultbase=$nextbase ${args[@]:1} || break
-	pop vals
-	pop tags
-    done
 }
 
 # Form: varset var=varname vals=a,b,c [tags=A,B,C] [command]
@@ -398,6 +353,8 @@ function varset()
 {
     local vals
     local tags
+    local nextbase
+    local tag
 
     $arg_parse
    
@@ -418,9 +375,7 @@ function varset()
 	tag=${tags[0]};
 	nextbase=$resultbase.$tag
 	info Running varset $nextbase
-	echo eval ${var}=${val}
-	eval "${var}=${val}"
-	${args[0]} resultbase=$nextbase ${args[@]:1} || break
+	${args[0]} resultbase=$nextbase ${var}=${val} "${args[@]:1}" || break
 	pop vals
 	pop tags
     done
