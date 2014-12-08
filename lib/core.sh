@@ -26,6 +26,31 @@ for _a in \"\$@\" ; do
     fi;
 done"
 
+arg_parse_cmd=\
+"local -a args;
+local _a;
+local _vn;
+local _m;
+
+_m=true;
+
+for _a in \"\$@\" ; do
+    false && echo \"Evaluating \${_a} [[ \"\${_a/=}\" = \"\${_a}\" ]]\";
+    if \$_m && [[ \"\${_a/=}\" != \"\${_a}\" ]] ; then
+        false && echo Parameter;
+        _vn=\${_a%%=*};
+        eval \"local \$_vn\";
+        eval \"\$_a\";
+    elif \$_m && [[ \"\${_a}\" == \"--\" ]] ; then
+        false && echo Separator;
+        _m=false;
+    else
+        false && echo Argument;
+        _m=false;
+        args+=(\"\$_a\");
+    fi;
+done"
+
 arg_parse="eval $arg_parse_cmd"
 
 # Pass in either the current function name, or the name of the script
