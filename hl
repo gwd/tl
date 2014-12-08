@@ -14,6 +14,7 @@ fi
 . ${TESTLIB_PATH}/core.sh
 . ${TESTLIB_PATH}/image.sh
 . ${TESTLIB_PATH}/tblib.sh
+. ${TESTLIB_PATH}/w-xenbuild.sh
 
 # And do your own thing rather than running commands
 # I suggest defining a "main" function of your own and running it like this.

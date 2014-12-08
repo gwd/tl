@@ -1,36 +1,3 @@
-# Setup: xenbuild/xen-unstable.hg in a buildable state, and all build requirements
-function workload-xen-build()
-{
-    local j
-
-    j=6
-
-    $arg_parse
-
-    tgt-helper addr
-    
-    ssh-cmd "cd xenbuild/xen.git ; make -C xen clean ; make XEN_TARGET_ARCH=x86_64 -j${j} xen"
-}
-
-function workload-xen-build-chroot()
-{
-    local j
-
-    j=6
-
-    $arg_parse
-
-    tgt-helper addr
-
-    ssh-cmd "chroot /mnt/h0 bash -c \"cd /root/xenbuild/xen.git ; make -C xen clean ; make XEN_TARGET_ARCH=x86_64 -j${j} xen\""
-}
-
-
-function workload-xen-build-set-testtype()
-{
-    testtype="runtime"
-}
-
 # VM-boot
 function workload-vm-boot-set-testtype()
 {
