@@ -145,7 +145,7 @@ function runtest-runtime()
     #workload-${workload}-set-testcmd ${args[@]}
 
     info "Staring ${workload} at time" `date`;
-    time-command workload-${workload} > ${resultbase}.output || ret=1
+    time-command workload-run > ${resultbase}.output || ret=1
     time="$ret_time"
     echo "$time" >> $resultbase.time
 
@@ -308,6 +308,78 @@ function xendeb()
 
     "${args[@]}" || return 1
     # $? passed back
+}
+
+#
+# Workload model:
+#
+# Function name workload-${workload}-${subfunction}
+#
+# -set-testtype: 
+#  Set the "testtype" variable.  Types:
+#   - "runtime" will cause the test to be timed.
+#
+# -setup: 
+#  Params distro (c6) and wdir (working directory to install).
+#  Set up everything and get the workload ready to run.
+#
+# [none]:
+#  Actually run the test.  Extra args can be used.
+#
+
+function workload-run()
+{
+    $arg_parse
+
+    $requireargs workload
+
+    default test_workload_dir "/workloads" ; $default_post
+
+    tgt-helper addr
+
+    wdir="${test_workload_dir}/${workload}"
+
+    ssh-cmd -t "cd $wdir; hl workload-${workload}"
+}
+
+# Run on a system with perf-setup
+function workload-setup()
+{
+    $arg_parse
+
+    $requireargs workload distro
+
+    default test_workload_dir "/workloads" ; $default_post
+
+    tgt-helper addr
+
+    wdir="${test_workload_dir}/${workload}"
+
+    ssh-cmd "rm -rf ${wdir}"
+
+    ssh-cmd "mkdir -p ${wdir}"
+
+    [[ -e "./testconfig" ]] && scp ./testconfig root@${tgt_addr}:${wdir}
+
+    tl-sync
+
+    ssh-cmd -t "cd $wdir; hl workload-${workload}-setup distro=${distro} wdir=${wdir}"
+}
+
+# Run on a basic system to make it suitable to run workload-setup 
+function perf-setup()
+{
+    $arg_parse
+
+    default test_workload_dir "/workloads" ; $default_post
+
+    tgt-helper addr
+
+    tl-install
+
+    wdir="${test_workload_dir}"    
+
+    ssh-cmd "mkdir -p ${wdir}"
 }
 
 # Form:  iterate count=foo resultbase=bar [command]
