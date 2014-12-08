@@ -326,6 +326,26 @@ function tgt-ssh()
     esac
 }
 
+# This is a bit hackish; requires adding the following line to your /etc/rc.local:
+#  touch /tmp/.finished-booting
+# and making sure that /tmp is deleted before ssh starts.
+function tgt-ready()
+{
+    $arg_parse
+
+    tgt-helper addr
+
+    default timeout 600 ; $default_post
+
+    ssh-ready
+
+    info "Waiting for ${tgt_addr} to be ready"
+    retry ssh-cmd "[[ -e /dev/shm/tl-finished-booting ]]"
+
+    status "Target ${tgt_addr} ready."
+    return 0
+}
+
 function vm-shutdown()
 {
     $arg_parse

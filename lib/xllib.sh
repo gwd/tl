@@ -182,28 +182,3 @@ function xl-vm-vnc()
     rport="$ret_remote_port"
     display-tunnel 
 }
-
-
-# This is a bit hackish; requires adding the following line to your /etc/rc.local:
-#  touch /tmp/.finished-booting
-# and making sure that /tmp is deleted before ssh starts.
-function xl-host-ready()
-{
-    local fn="xl-host-ready"
-    # Passable parameters
-    local host
-    local cmd
- 
-    $arg_parse
-
-    $requireargs host
-
-    while ! ssh-cmd "[[ -e /tmp/.finished-booting ]]" ; do
-	info "Waiting for ${host} to be ready"
-	sleep 1
-    done
-
-    status "Host ${host} ready."
-    return 0
-}
-
